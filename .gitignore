@@ -1,6 +1,4 @@
 # Personal/Private files
-PERSONAL_NOTES.md
-TODO_PRIVATE.md
 *.private
 
 # OS files
@@ -11,6 +9,6 @@ Thumbs.db
 *~
 *.tmp
 
-# IDE settings (optional - remove if you want to share IDE settings)
+# IDE settings
 .vscode/settings.json
 .idea/workspace.xml
