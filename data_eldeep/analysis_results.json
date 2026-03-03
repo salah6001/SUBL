@@ -1,0 +1,43 @@
+{
+  "model_performance": {
+    "binary_classification": {
+      "best_model": "Gradient Boosting",
+      "test_accuracy": 0.7692307692307693,
+      "train_accuracy": 1.0
+    }
+  },
+  "key_insights": {
+    "muscle_tension": {
+      "description": "Hold time increases under stress indicating muscle tension",
+      "insight": "Person under stress presses keys harder and longer"
+    },
+    "rhythm_variance": {
+      "description": "Flight time variability changes under stress",
+      "insight": "Stress causes irregular typing rhythm"
+    },
+    "typing_speed": {
+      "description": "Typing speed changes under stress",
+      "insight": "Stress can cause either faster or slower typing"
+    },
+    "error_patterns": {
+      "description": "Delete key usage patterns change under stress",
+      "insight": "More corrections needed when stressed"
+    }
+  },
+  "feature_importance": {
+    "hold_time_mean": 0.07820372474812007,
+    "hold_time_std": 0.062274050893389915,
+    "hold_time_max": 0.0814032526954074,
+    "hold_time_min": 0.026943833690096928,
+    "flight_time_mean": 0.01870127112808656,
+    "flight_time_std": 0.025391272651599666,
+    "flight_time_max": 0.03390117687087559,
+    "flight_time_min": 0.07816015130062326,
+    "hold_time_cv": 0.04023021480445081,
+    "flight_time_cv": 0.08453350134764663,
+    "key_press_count": 0.31079597254075475,
+    "u1d2_mean": 0.013054299315216131,
+    "u1d2_std": 0.08772521794060031,
+    "typing_speed": 0.05868206007313213
+  }
+}

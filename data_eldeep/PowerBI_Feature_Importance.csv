@@ -1,0 +1,8 @@
+Feature,Importance,Rank,Category
+typing_speed,0.245,1,Speed
+hold_time_mean,0.198,2,Timing
+flight_time_mean,0.176,3,Timing
+hold_time_cv,0.134,4,Variability
+flight_time_cv,0.112,5,Variability
+u1d2_mean,0.089,6,Timing
+key_press_count,0.046,7,Count

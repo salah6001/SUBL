@@ -1,0 +1,6 @@
+Emotion,Code,Count,Percentage,Hold_Time_Mean,Flight_Time_Mean,Typing_Speed,Delete_Freq,Session_Duration
+Normal,N,45,28,98.5,312.5,146.2,7.2,42.5
+Calm,C,38,24,95.2,298.7,151.8,6.5,40.2
+High Stress,H,35,22,108.4,345.6,130.5,8.1,48.7
+Angry,A,24,15,112.7,352.8,127.4,8.5,51.3
+Sad,S,18,11,104.3,338.9,133.2,7.8,46.8

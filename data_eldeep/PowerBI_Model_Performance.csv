@@ -1,0 +1,4 @@
+Model,Train_Accuracy,Test_Accuracy,Status
+Random Forest,100.0,64.1,
+Gradient Boosting,100.0,76.9,BEST
+SVM (RBF),95.2,59.0,
