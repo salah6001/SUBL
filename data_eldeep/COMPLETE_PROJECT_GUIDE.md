@@ -131,7 +131,7 @@
 
 **Key Insight**:
 
-- **Gradient Boosting wins** with 76.9% accuracy
+- **Gradient Boosting wins** with 76.9% accuracy كيف
 - ROC AUC = 0.85 (excellent)
 - Top 3 features: typing_speed, hold_time_mean, flight_time_mean
 
@@ -148,7 +148,7 @@
 - All key metrics in one view
 - Hold time, rhythm variance, typing speed by emotion
 - Delete usage, session duration by emotion
-- Normal vs Stress comparison (normalized)
+- Normal vs Stress comparison (normalized) (كيف: normal/calm مع بعض)
 
 **Key Insight**:
 
@@ -175,7 +175,7 @@
 
 - At t=30s, stress is triggered
 - Hold time increases from ~100ms to ~120ms
-- Stress score crosses alert threshold (50)
+- Stress score crosses alert threshold (50) كيف
 - System would trigger intervention
 
 **Why it matters**: Demonstrates how Subl would work in real-world application.
