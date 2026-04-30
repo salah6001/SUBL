@@ -1,0 +1,54 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+.Python
+*.egg-info/
+dist/
+build/
+*.egg
+
+# Virtual environments
+.venv/
+venv/
+env/
+
+# Jupyter
+.ipynb_checkpoints/
+*.ipynb_checkpoints
+
+# Data — raw CSVs tracked in git; large processed outputs ignored
+data/processed/*.pkl
+data/processed/*.npy
+
+# Model binaries — track metadata only, not binaries
+model/*.pkl
+model/*.joblib
+!model/metadata.json
+
+# Deliverables — generated artefacts, not source
+deliverables/
+
+# Environment
+.env
+.env.*
+*.env
+
+# IDE
+.vscode/
+.idea/
+*.sublime-project
+*.sublime-workspace
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+logs/
+
+# Test artefacts
+.pytest_cache/
+htmlcov/
+.coverage

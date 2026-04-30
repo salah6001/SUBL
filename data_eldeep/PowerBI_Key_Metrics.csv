@@ -1,7 +1,0 @@
-Metric,Value,Unit,Category
-Total Keystrokes,42500.0,keystrokes,Data
-Participants,39.0,users,Data
-Model Accuracy,76.9,%,Model
-Features Extracted,12.0,features,Features
-Emotions Detected,5.0,emotions,Output
-ROC AUC,0.85,score,Model
