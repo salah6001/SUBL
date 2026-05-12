@@ -106,7 +106,7 @@ describe('useAppState', () => {
     const stored = JSON.stringify({ state: { token: 'saved-tok', isAuthenticated: true, currentUser: mockUser }, version: 0 });
     localStorage.setItem('subl-app-storage', stored);
     // Force rehydration by creating a new store instance via getState
-    const state = useAppState.getState();
+    void useAppState.getState();
     // The persist middleware rehydrates on init; we check via a fresh renderHook
     const { result } = renderHook(() => useAppState());
     // After setting state manually to simulate rehydration

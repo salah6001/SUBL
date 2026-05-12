@@ -1,5 +1,5 @@
 import { useLocation, useNavigate } from 'react-router';
-import { SublLogo } from './SublLogo';
+import { SublLogoFull } from './SublLogo';
 import { useAppState } from '@/hooks/useAppState';
 import {
   LayoutDashboard,
@@ -24,9 +24,8 @@ export function Sidebar() {
   return (
     <aside className="w-[260px] min-h-screen bg-white border-r border-subl-grey-100 flex flex-col sticky top-0">
       {/* Logo */}
-      <div className="p-6 flex items-center gap-3">
-        <SublLogo className="w-8 h-8" />
-        <span className="text-xl font-bold text-subl-blue-500">Subl</span>
+      <div className="p-6">
+        <SublLogoFull className="h-11 w-auto" />
       </div>
 
       {/* Navigation */}

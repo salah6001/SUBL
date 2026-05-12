@@ -1,4 +1,4 @@
-import { SublLogo } from './SublLogo';
+import { SublLogoFull } from './SublLogo';
 import type { ReactNode } from 'react';
 
 interface AuthLayoutProps {
@@ -20,8 +20,7 @@ export function AuthLayout({ children, showBack, onBack }: AuthLayoutProps) {
               </svg>
             </button>
           )}
-          <SublLogo className="w-8 h-8" />
-          <span className="text-xl font-bold text-subl-blue-500">Subl</span>
+          <SublLogoFull className="h-10 w-auto" />
         </div>
         <div className="flex-1 flex flex-col justify-center max-w-md mx-auto w-full">
           {children}

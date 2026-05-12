@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { AppLayout } from '@/components/AppLayout';
 import { useAppState } from '@/hooks/useAppState';
 import { dashboardApi } from '@/api/dashboard';
+import { isDemoSession, getDemoDashboardStats } from '@/lib/demoAuth';
 import type { DashboardStats } from '@/types';
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
@@ -33,10 +34,10 @@ export default function Dashboard() {
 
   useEffect(() => {
     setFetchError(false);
-    dashboardApi.getStats(timeRange)
+    (isDemoSession() ? Promise.resolve(getDemoDashboardStats(timeRange)) : dashboardApi.getStats(timeRange))
       .then((data) => {
         setStats(data);
-        setEmotionalState(data.emotional_state);
+        setEmotionalState(data.emotional_state as import('@/hooks/useAppState').EmotionalState);
       })
       .catch(() => setFetchError(true));
   }, [timeRange, setEmotionalState]);

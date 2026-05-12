@@ -1,0 +1,111 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 450" width="800" height="450">
+  <defs>
+    <linearGradient id="sky6" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#1a1a4a"/>
+      <stop offset="25%" stop-color="#3a2060"/>
+      <stop offset="50%" stop-color="#c04020"/>
+      <stop offset="70%" stop-color="#e87030"/>
+      <stop offset="85%" stop-color="#f8b040"/>
+      <stop offset="100%" stop-color="#fad060"/>
+    </linearGradient>
+    <linearGradient id="hill6a" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#2a4010"/>
+      <stop offset="100%" stop-color="#1a2808"/>
+    </linearGradient>
+    <linearGradient id="hill6b" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#384e18"/>
+      <stop offset="100%" stop-color="#202e0c"/>
+    </linearGradient>
+    <radialGradient id="sun6" cx="70%" cy="78%" r="22%">
+      <stop offset="0%" stop-color="#fff5a0" stop-opacity="1"/>
+      <stop offset="30%" stop-color="#f8b040" stop-opacity="0.8"/>
+      <stop offset="100%" stop-color="#f8b040" stop-opacity="0"/>
+    </radialGradient>
+    <filter id="sunblur6">
+      <feGaussianBlur stdDeviation="4"/>
+    </filter>
+  </defs>
+
+  <!-- Sky gradient (sunset) -->
+  <rect width="800" height="450" fill="url(#sky6)"/>
+
+  <!-- Sun glow (blurred) -->
+  <circle cx="560" cy="350" r="80" fill="#fff5a0" opacity="0.25" filter="url(#sunblur6)"/>
+
+  <!-- Sun -->
+  <circle cx="560" cy="352" r="34" fill="#fff5c0" opacity="0.95"/>
+  <circle cx="560" cy="352" r="42" fill="#ffd060" opacity="0.4"/>
+
+  <!-- Sun rays -->
+  <rect width="800" height="450" fill="url(#sun6)" opacity="0.6"/>
+
+  <!-- Clouds -->
+  <g opacity="0.85">
+    <ellipse cx="160" cy="130" rx="110" ry="32" fill="#7a3050"/>
+    <ellipse cx="200" cy="118" rx="85" ry="28" fill="#8a3858"/>
+    <ellipse cx="120" cy="122" rx="75" ry="24" fill="#7a3050"/>
+  </g>
+  <g opacity="0.75">
+    <ellipse cx="550" cy="160" rx="90" ry="25" fill="#6a2840"/>
+    <ellipse cx="590" cy="150" rx="70" ry="22" fill="#7a3048"/>
+    <ellipse cx="510" cy="155" rx="65" ry="20" fill="#6a2840"/>
+  </g>
+  <g opacity="0.65">
+    <ellipse cx="330" cy="100" rx="100" ry="28" fill="#903858"/>
+    <ellipse cx="370" cy="90" rx="78" ry="24" fill="#a04060"/>
+    <ellipse cx="290" cy="96" rx="70" ry="22" fill="#903858"/>
+  </g>
+  <!-- Lighter accent clouds -->
+  <g opacity="0.5">
+    <ellipse cx="700" cy="85" rx="80" ry="22" fill="#d07080"/>
+    <ellipse cx="730" cy="76" rx="60" ry="18" fill="#d88090"/>
+  </g>
+
+  <!-- Far rolling hills (dark silhouette) -->
+  <ellipse cx="0" cy="330" rx="260" ry="80" fill="url(#hill6a)"/>
+  <ellipse cx="220" cy="320" rx="280" ry="85" fill="url(#hill6a)"/>
+  <ellipse cx="500" cy="315" rx="300" ry="88" fill="url(#hill6a)"/>
+  <ellipse cx="800" cy="325" rx="260" ry="82" fill="url(#hill6a)"/>
+
+  <!-- Mid hills -->
+  <ellipse cx="100" cy="360" rx="220" ry="95" fill="url(#hill6b)"/>
+  <ellipse cx="380" cy="355" rx="280" ry="100" fill="url(#hill6b)"/>
+  <ellipse cx="700" cy="358" rx="240" ry="96" fill="url(#hill6b)"/>
+
+  <!-- Foreground ground -->
+  <rect x="0" y="380" width="800" height="70" fill="#1a2808"/>
+  <ellipse cx="400" cy="380" rx="500" ry="50" fill="#1e3010"/>
+
+  <!-- Tree silhouettes left -->
+  <g fill="#0e1a06">
+    <rect x="30" y="220" width="14" height="200" rx="7"/>
+    <ellipse cx="37" cy="222" rx="32" ry="55" fill="#0e1a06"/>
+    <rect x="80" y="240" width="12" height="180" rx="6"/>
+    <ellipse cx="86" cy="242" rx="28" ry="48" fill="#0e1a06"/>
+    <rect x="10" y="260" width="10" height="160" rx="5"/>
+    <ellipse cx="15" cy="262" rx="22" ry="40" fill="#0e1a06"/>
+  </g>
+
+  <!-- Tree silhouettes right -->
+  <g fill="#0e1a06">
+    <rect x="718" y="215" width="14" height="205" rx="7"/>
+    <ellipse cx="725" cy="217" rx="34" ry="58" fill="#0e1a06"/>
+    <rect x="760" y="235" width="12" height="185" rx="6"/>
+    <ellipse cx="766" cy="237" rx="30" ry="50" fill="#0e1a06"/>
+    <rect x="685" y="250" width="11" height="170" rx="5"/>
+    <ellipse cx="690" cy="252" rx="25" ry="44" fill="#0e1a06"/>
+  </g>
+
+  <!-- Ground grass detail -->
+  <g stroke="#2a4010" stroke-width="2" opacity="0.6">
+    <line x1="150" y1="450" x2="158" y2="410"/>
+    <line x1="200" y1="450" x2="195" y2="408"/>
+    <line x1="300" y1="450" x2="307" y2="412"/>
+    <line x1="480" y1="450" x2="475" y2="408"/>
+    <line x1="600" y1="450" x2="606" y2="412"/>
+    <line x1="680" y1="450" x2="674" y2="410"/>
+  </g>
+
+  <!-- Horizon glow -->
+  <rect x="0" y="340" width="800" height="20" fill="#f8a030" opacity="0.15"/>
+</svg>

@@ -3,6 +3,7 @@ import { AppLayout } from '@/components/AppLayout';
 import { Send, Sparkles, User } from 'lucide-react';
 import { useAppState } from '@/hooks/useAppState';
 import { chatApi } from '@/api/chat';
+import { isDemoSession, getDemoChatReply } from '@/lib/demoAuth';
 import { toast } from 'sonner';
 
 interface Message {
@@ -60,7 +61,7 @@ export default function SubiAI() {
     setIsTyping(true);
 
     try {
-      const { reply } = await chatApi.send({ message: text });
+      const { reply } = isDemoSession() ? getDemoChatReply(text) : await chatApi.send({ message: text });
       setMessages((prev) => [
         ...prev,
         { id: msgId.current++, role: 'assistant', content: reply, timestamp: new Date() },

@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router';
 import { AppLayout } from '@/components/AppLayout';
 import { articlesApi } from '@/api/articles';
+import { isDemoSession, getDemoArticles } from '@/lib/demoAuth';
 import type { Article } from '@/types';
 import { Clock } from 'lucide-react';
 import { getArticlePlaceholder, avatarPlaceholder } from '@/lib/articlePlaceholder';
@@ -17,7 +18,7 @@ export default function Articles() {
   useEffect(() => {
     setLoading(true);
     setError(false);
-    articlesApi.list(sortBy || undefined)
+    (isDemoSession() ? Promise.resolve(getDemoArticles()) : articlesApi.list(sortBy || undefined))
       .then(setArticles)
       .catch(() => setError(true))
       .finally(() => setLoading(false));

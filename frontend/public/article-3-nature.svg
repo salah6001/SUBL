@@ -1,0 +1,129 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 450" width="800" height="450">
+  <defs>
+    <linearGradient id="sky3" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#c9e8f8"/>
+      <stop offset="50%" stop-color="#e8f4fd"/>
+      <stop offset="100%" stop-color="#f5faff"/>
+    </linearGradient>
+    <linearGradient id="hill3a" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#7ab648"/>
+      <stop offset="100%" stop-color="#5a9030"/>
+    </linearGradient>
+    <linearGradient id="hill3b" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#90c855"/>
+      <stop offset="100%" stop-color="#6aaa38"/>
+    </linearGradient>
+    <radialGradient id="sun3" cx="25%" cy="15%" r="20%">
+      <stop offset="0%" stop-color="#fffde0"/>
+      <stop offset="100%" stop-color="#c9e8f8" stop-opacity="0"/>
+    </radialGradient>
+    <filter id="softblur">
+      <feGaussianBlur stdDeviation="2"/>
+    </filter>
+  </defs>
+
+  <!-- Sky -->
+  <rect width="800" height="450" fill="url(#sky3)"/>
+
+  <!-- Sun -->
+  <circle cx="200" cy="80" r="48" fill="#fffde0" opacity="0.95"/>
+  <circle cx="200" cy="80" r="65" fill="#fffde0" opacity="0.3"/>
+  <rect width="800" height="450" fill="url(#sun3)"/>
+
+  <!-- Distant clouds -->
+  <g opacity="0.7">
+    <ellipse cx="580" cy="80" rx="90" ry="28" fill="white"/>
+    <ellipse cx="620" cy="72" rx="70" ry="24" fill="white"/>
+    <ellipse cx="540" cy="76" rx="60" ry="20" fill="white"/>
+  </g>
+  <g opacity="0.6">
+    <ellipse cx="130" cy="100" rx="70" ry="22" fill="white"/>
+    <ellipse cx="160" cy="93" rx="55" ry="20" fill="white"/>
+  </g>
+
+  <!-- Far hill -->
+  <ellipse cx="400" cy="310" rx="500" ry="130" fill="#b0d870" opacity="0.5"/>
+
+  <!-- Mid hill -->
+  <ellipse cx="400" cy="360" rx="500" ry="140" fill="url(#hill3a)"/>
+
+  <!-- Ground -->
+  <rect x="0" y="360" width="800" height="90" fill="url(#hill3b)"/>
+
+  <!-- Wildflowers — stems and blooms scattered -->
+  <!-- Left cluster -->
+  <g>
+    <line x1="80" y1="420" x2="78" y2="355" stroke="#5a8030" stroke-width="2"/>
+    <circle cx="78" cy="350" r="10" fill="#f06090"/>
+    <line x1="110" y1="425" x2="112" y2="350" stroke="#5a8030" stroke-width="2"/>
+    <circle cx="112" cy="345" r="9" fill="#f8c040"/>
+    <line x1="55" y1="430" x2="53" y2="370" stroke="#5a8030" stroke-width="2"/>
+    <circle cx="53" cy="364" r="8" fill="#9060d0"/>
+    <line x1="135" y1="420" x2="137" y2="360" stroke="#5a8030" stroke-width="2"/>
+    <circle cx="137" cy="354" r="11" fill="#e04060"/>
+    <line x1="160" y1="430" x2="158" y2="375" stroke="#5a8030" stroke-width="2"/>
+    <circle cx="158" cy="368" r="8" fill="#50b8f0"/>
+  </g>
+
+  <!-- Mid-left cluster -->
+  <g>
+    <line x1="230" y1="420" x2="228" y2="348" stroke="#5a8030" stroke-width="2"/>
+    <circle cx="228" cy="342" r="12" fill="#f06090"/>
+    <line x1="255" y1="425" x2="257" y2="360" stroke="#5a8030" stroke-width="2"/>
+    <circle cx="257" cy="354" r="9" fill="#f8c040"/>
+    <line x1="210" y1="430" x2="208" y2="372" stroke="#5a8030" stroke-width="2"/>
+    <circle cx="208" cy="366" r="10" fill="#ff8030"/>
+    <line x1="280" y1="422" x2="282" y2="358" stroke="#5a8030" stroke-width="2"/>
+    <circle cx="282" cy="352" r="9" fill="#a060e0"/>
+  </g>
+
+  <!-- Centre cluster -->
+  <g>
+    <line x1="370" y1="418" x2="368" y2="342" stroke="#5a8030" stroke-width="2"/>
+    <circle cx="368" cy="336" r="13" fill="#f8c040"/>
+    <line x1="400" y1="425" x2="402" y2="355" stroke="#5a8030" stroke-width="2"/>
+    <circle cx="402" cy="349" r="10" fill="#f06090"/>
+    <line x1="430" y1="420" x2="432" y2="348" stroke="#5a8030" stroke-width="2"/>
+    <circle cx="432" cy="342" r="11" fill="#50b8f0"/>
+    <line x1="350" y1="430" x2="348" y2="372" stroke="#5a8030" stroke-width="2"/>
+    <circle cx="348" cy="366" r="8" fill="#ff8030"/>
+    <line x1="455" y1="428" x2="457" y2="365" stroke="#5a8030" stroke-width="2"/>
+    <circle cx="457" cy="359" r="9" fill="#e04060"/>
+  </g>
+
+  <!-- Right cluster -->
+  <g>
+    <line x1="560" y1="420" x2="558" y2="350" stroke="#5a8030" stroke-width="2"/>
+    <circle cx="558" cy="344" r="12" fill="#9060d0"/>
+    <line x1="590" y1="425" x2="592" y2="358" stroke="#5a8030" stroke-width="2"/>
+    <circle cx="592" cy="352" r="9" fill="#f8c040"/>
+    <line x1="620" y1="418" x2="622" y2="352" stroke="#5a8030" stroke-width="2"/>
+    <circle cx="622" cy="346" r="11" fill="#f06090"/>
+    <line x1="540" y1="430" x2="538" y2="375" stroke="#5a8030" stroke-width="2"/>
+    <circle cx="538" cy="369" r="8" fill="#50b8f0"/>
+  </g>
+
+  <!-- Far right cluster -->
+  <g>
+    <line x1="700" y1="422" x2="698" y2="355" stroke="#5a8030" stroke-width="2"/>
+    <circle cx="698" cy="349" r="11" fill="#ff8030"/>
+    <line x1="730" y1="425" x2="732" y2="360" stroke="#5a8030" stroke-width="2"/>
+    <circle cx="732" cy="354" r="9" fill="#f06090"/>
+    <line x1="755" y1="420" x2="757" y2="358" stroke="#5a8030" stroke-width="2"/>
+    <circle cx="757" cy="352" r="10" fill="#f8c040"/>
+  </g>
+
+  <!-- Grass blades -->
+  <g stroke="#5a9030" stroke-width="1.5" opacity="0.8">
+    <line x1="30" y1="450" x2="38" y2="400"/>
+    <line x1="45" y1="450" x2="40" y2="395"/>
+    <line x1="190" y1="450" x2="195" y2="402"/>
+    <line x1="320" y1="450" x2="325" y2="405"/>
+    <line x1="490" y1="450" x2="487" y2="400"/>
+    <line x1="650" y1="450" x2="655" y2="403"/>
+    <line x1="780" y1="450" x2="775" y2="398"/>
+  </g>
+
+  <!-- Subtle mist on horizon -->
+  <rect x="0" y="250" width="800" height="60" fill="white" opacity="0.15"/>
+</svg>

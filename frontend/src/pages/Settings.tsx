@@ -6,7 +6,9 @@ import { useNavigate } from 'react-router';
 import { AppLayout } from '@/components/AppLayout';
 import { useAppState } from '@/hooks/useAppState';
 import { userApi } from '@/api/user';
+import { isDemoSession, getDemoProfileUpdate } from '@/lib/demoAuth';
 import { Mail, Phone, User, Bell, Lock, ChevronRight, MessageCircle } from 'lucide-react';
+import { avatarPlaceholder } from '@/lib/articlePlaceholder';
 import { toast } from 'sonner';
 
 const schema = z.object({
@@ -41,7 +43,7 @@ export default function Settings() {
   const handleSave = handleSubmit(async (data) => {
     setSaving(true);
     try {
-      const updated = await userApi.updateProfile(data);
+      const updated = isDemoSession() ? getDemoProfileUpdate(data) : await userApi.updateProfile(data);
       setUser(updated);
       setIsEditing(false);
       toast.success('Profile updated');
@@ -56,7 +58,7 @@ export default function Settings() {
     const next = !notifications;
     setNotifications(next);
     try {
-      await userApi.updateNotifications({ notifications: next });
+      if (!isDemoSession()) await userApi.updateNotifications({ notifications: next });
     } catch {
       setNotifications(!next);
       toast.error('Failed to update notifications');
@@ -69,9 +71,11 @@ export default function Settings() {
         <div className="bg-white rounded-2xl p-6 shadow-sm mb-6">
           <div className="flex items-center justify-between mb-6">
             <div className="flex items-center gap-4">
-              <div className="w-16 h-16 rounded-xl bg-subl-blue-100 flex items-center justify-center">
-                <User size={28} className="text-subl-blue-500" />
-              </div>
+              <img
+                src={currentUser?.avatar || avatarPlaceholder(currentUser?.name ?? '')}
+                alt={currentUser?.name ?? 'Profile'}
+                className="w-16 h-16 rounded-xl object-cover ring-2 ring-subl-blue-100"
+              />
               <div>
                 <h3 className="text-lg font-semibold text-subl-grey-900">{currentUser?.name || 'User'}</h3>
                 <p className="text-sm text-subl-grey-500">{currentUser?.email}</p>

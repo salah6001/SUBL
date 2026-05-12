@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router';
 import { AppLayout } from '@/components/AppLayout';
 import { articlesApi } from '@/api/articles';
+import { isDemoSession, getDemoArticle } from '@/lib/demoAuth';
 import type { Article } from '@/types';
 import { ArrowLeft, Clock } from 'lucide-react';
 import { getArticlePlaceholder, avatarPlaceholder } from '@/lib/articlePlaceholder';
@@ -15,7 +16,7 @@ export default function ArticleDetail() {
 
   useEffect(() => {
     if (!id) return;
-    articlesApi.get(Number(id))
+    (isDemoSession() ? Promise.resolve(getDemoArticle(Number(id))) : articlesApi.get(Number(id)))
       .then(setArticle)
       .catch(() => setError(true))
       .finally(() => setLoading(false));

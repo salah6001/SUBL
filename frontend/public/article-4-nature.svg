@@ -1,0 +1,130 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 450" width="800" height="450">
+  <defs>
+    <linearGradient id="sky4" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#1a3a5c"/>
+      <stop offset="35%" stop-color="#2e6090"/>
+      <stop offset="65%" stop-color="#c8a0c8"/>
+      <stop offset="100%" stop-color="#f0c8a0"/>
+    </linearGradient>
+    <linearGradient id="water4" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#4080b0"/>
+      <stop offset="100%" stop-color="#2a5a80"/>
+    </linearGradient>
+    <linearGradient id="mountain4a" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#f0f4f8"/>
+      <stop offset="30%" stop-color="#d0d8e0"/>
+      <stop offset="100%" stop-color="#6080a0"/>
+    </linearGradient>
+    <linearGradient id="mountain4b" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#e8eef4"/>
+      <stop offset="25%" stop-color="#c0ccd8"/>
+      <stop offset="100%" stop-color="#507090"/>
+    </linearGradient>
+    <linearGradient id="pine4" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#1a4020"/>
+      <stop offset="100%" stop-color="#0e2810"/>
+    </linearGradient>
+    <filter id="reflect">
+      <feGaussianBlur stdDeviation="1.5"/>
+    </filter>
+  </defs>
+
+  <!-- Sky -->
+  <rect width="800" height="450" fill="url(#sky4)"/>
+
+  <!-- Stars (subtle) -->
+  <g fill="white" opacity="0.6">
+    <circle cx="100" cy="30" r="1.2"/>
+    <circle cx="180" cy="18" r="1.5"/>
+    <circle cx="260" cy="40" r="1"/>
+    <circle cx="350" cy="22" r="1.3"/>
+    <circle cx="500" cy="35" r="1"/>
+    <circle cx="620" cy="15" r="1.4"/>
+    <circle cx="700" cy="45" r="1.1"/>
+    <circle cx="750" cy="25" r="1.2"/>
+  </g>
+
+  <!-- Far mountain left -->
+  <polygon points="-20,280 120,120 260,280" fill="url(#mountain4a)"/>
+  <!-- Snow cap left -->
+  <polygon points="120,120 95,175 145,175" fill="white" opacity="0.95"/>
+
+  <!-- Far mountain centre -->
+  <polygon points="250,280 420,90 590,280" fill="url(#mountain4b)"/>
+  <!-- Snow cap centre -->
+  <polygon points="420,90 388,165 452,165" fill="white" opacity="0.95"/>
+
+  <!-- Far mountain right -->
+  <polygon points="540,280 680,130 820,280" fill="url(#mountain4a)"/>
+  <!-- Snow cap right -->
+  <polygon points="680,130 655,190 705,190" fill="white" opacity="0.92"/>
+
+  <!-- Treeline left -->
+  <g fill="url(#pine4)">
+    <polygon points="0,290 18,240 36,290"/>
+    <polygon points="25,295 45,238 65,295"/>
+    <polygon points="55,290 75,232 95,290"/>
+    <polygon points="80,295 102,228 124,295"/>
+    <polygon points="110,292 134,225 158,292"/>
+    <polygon points="140,296 165,230 190,296"/>
+    <polygon points="170,294 196,226 222,294"/>
+  </g>
+
+  <!-- Treeline right -->
+  <g fill="url(#pine4)">
+    <polygon points="578,292 602,226 626,292"/>
+    <polygon points="610,294 636,228 662,294"/>
+    <polygon points="645,290 672,222 699,290"/>
+    <polygon points="680,295 708,228 736,295"/>
+    <polygon points="715,292 744,225 773,292"/>
+    <polygon points="750,294 780,228 810,294"/>
+  </g>
+
+  <!-- Lake shore -->
+  <ellipse cx="400" cy="310" rx="400" ry="40" fill="#3070a0" opacity="0.8"/>
+
+  <!-- Lake water -->
+  <rect x="0" y="295" width="800" height="155" fill="url(#water4)"/>
+
+  <!-- Reflections in water (blurred) -->
+  <g filter="url(#reflect)" opacity="0.55">
+    <!-- Mountain reflection -->
+    <polygon points="250,295 420,420 590,295" fill="#5080a0"/>
+    <polygon points="-20,295 120,390 260,295" fill="#4878a0"/>
+    <polygon points="540,295 680,380 820,295" fill="#4878a0"/>
+    <!-- Tree reflection left -->
+    <g fill="#0e2015" opacity="0.8">
+      <polygon points="0,295 18,340 36,295"/>
+      <polygon points="25,295 45,348 65,295"/>
+      <polygon points="55,295 75,352 95,295"/>
+      <polygon points="80,295 102,355 124,295"/>
+    </g>
+    <!-- Tree reflection right -->
+    <g fill="#0e2015" opacity="0.8">
+      <polygon points="578,295 602,348 626,295"/>
+      <polygon points="610,295 636,352 662,295"/>
+      <polygon points="645,295 672,358 699,295"/>
+    </g>
+    <!-- Snow reflection -->
+    <ellipse cx="420" cy="360" rx="35" ry="8" fill="white" opacity="0.5"/>
+  </g>
+
+  <!-- Water shimmer lines -->
+  <g stroke="white" stroke-width="1" opacity="0.25">
+    <line x1="150" y1="320" x2="280" y2="320"/>
+    <line x1="350" y1="335" x2="500" y2="335"/>
+    <line x1="200" y1="355" x2="330" y2="355"/>
+    <line x1="480" y1="348" x2="620" y2="348"/>
+    <line x1="100" y1="370" x2="220" y2="370"/>
+    <line x1="560" y1="362" x2="700" y2="362"/>
+  </g>
+
+  <!-- Foreground rocks -->
+  <ellipse cx="80" cy="300" rx="45" ry="18" fill="#4a5a6a"/>
+  <ellipse cx="720" cy="298" rx="50" ry="20" fill="#4a5a6a"/>
+  <ellipse cx="320" cy="302" rx="30" ry="12" fill="#505f70"/>
+  <ellipse cx="500" cy="300" rx="28" ry="11" fill="#505f70"/>
+
+  <!-- Subtle mist at water edge -->
+  <rect x="0" y="288" width="800" height="20" fill="white" opacity="0.12"/>
+</svg>
