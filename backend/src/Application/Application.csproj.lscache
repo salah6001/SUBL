@@ -1,0 +1,688 @@
+version=1
+
+# This file caches language service data to improve the performance of C# Dev Kit.
+# It is not intended for manual editing. It can safely be deleted and will be
+# regenerated automatically. For more information, see https://aka.ms/lscache
+#
+# To control where cache files are stored, use the following VS Code setting:
+#   "dotnet.projectsystem.cacheInProjectFolder": true
+
+[project]
+language=C#
+primary
+lastDtbSucceeded
+
+[properties]
+AssemblyName=Application
+CommandLineArgsForDesignTimeEvaluation=-langversion:14.0 -define:TRACE
+CompilerGeneratedFilesOutputPath=
+MaxSupportedLangVersion=14.0
+ProjectAssetsFile=<PATH>obj/project.assets.json
+RootNamespace=Application
+RunAnalyzers=
+RunAnalyzersDuringLiveAnalysis=
+SolutionPath=<PATH>../../finel project.sln
+TargetFrameworkIdentifier=.NETCoreApp
+TargetPath=<PATH>bin/Debug/net10.0/Application.dll
+TargetRefPath=<PATH>obj/Debug/net10.0/ref/Application.dll
+TemporaryDependencyNodeTargetIdentifier=net10.0
+
+[commandLineArguments]
+/noconfig
+/unsafe-
+/checked-
+/nowarn:NU1608,NU1902,NU1903,1701,1702,8002
+/fullpaths
+/nostdlib+
+/errorreport:prompt
+/warn:10
+/define:TRACE;DEBUG;NET;NET10_0;NETCOREAPP;NET5_0_OR_GREATER;NET6_0_OR_GREATER;NET7_0_OR_GREATER;NET8_0_OR_GREATER;NET9_0_OR_GREATER;NET10_0_OR_GREATER;NETCOREAPP1_0_OR_GREATER;NETCOREAPP1_1_OR_GREATER;NETCOREAPP2_0_OR_GREATER;NETCOREAPP2_1_OR_GREATER;NETCOREAPP2_2_OR_GREATER;NETCOREAPP3_0_OR_GREATER;NETCOREAPP3_1_OR_GREATER
+/highentropyva+
+/nullable:enable
+/features:"InterceptorsNamespaces=;Microsoft.Extensions.Validation.Generated"
+/debug+
+/debug:portable
+/filealign:512
+/optimize-
+/out:obj\Debug\net10.0\Application.dll
+/refout:obj\Debug\net10.0\refint\Application.dll
+/target:library
+/warnaserror+
+/utf8output
+/deterministic+
+/langversion:14.0
+/warnaserror+:NU1605,SYSLIB0011
+
+[sourceFiles]
+Abstractions/
+ Audit/IAuditService.cs
+ Behaviors/
+  LoggingDecorator.cs
+  ValidationDecorator.cs
+ Data/
+  IApplicationDbContext.cs
+  IUnitOfWork.cs
+ Email/IEmailService.cs
+ Identity/
+  ICurrentUserService.cs
+  IdentityErrors.cs
+  IIdentityService.cs
+  ITokenCleanupService.cs
+  ITwoFactorHealthCheckService.cs
+  TokenResponse.cs
+  TwoFactorSetupInfo.cs
+ Messaging/
+  ICommand.cs
+  ICommandHandler.cs
+  IQuery.cs
+  IQueryHandler.cs
+ Notifications/
+  INotificationBuilder.cs
+  INotificationChannel.cs
+  INotificationDispatcher.cs
+  INotificationService.cs
+  IRealtimeNotificationService.cs
+  NotificationContext.cs
+  NotificationResult.cs
+  RealtimeNotificationMessage.cs
+ Repositories/
+  IDeviceRepository.cs
+  INotificationRepository.cs
+  INotificationTypeRepository.cs
+  IStressReadingRepository.cs
+  IStressSessionRepository.cs
+  IUserNotificationPreferencesRepository.cs
+  IUserPushTokenRepository.cs
+ StressDetection/IStressDetectionService.cs
+Accounts/AcceptInvitation/
+ AcceptInvitationCommand.cs
+ AcceptInvitationCommandHandler.cs
+ AcceptInvitationCommandValidator.cs
+Accounts/ActivateAccount/
+ ActivateAccountCommand.cs
+ ActivateAccountCommandHandler.cs
+Accounts/AddAccountContact/
+ AddAccountContactCommand.cs
+ AddAccountContactCommandHandler.cs
+ AddAccountContactCommandValidator.cs
+Accounts/CancelInvitation/
+ CancelInvitationCommand.cs
+ CancelInvitationCommandHandler.cs
+Accounts/Common/
+ AccountResponse.cs
+ AccountSearchConfiguration.cs
+ AccountSortConfiguration.cs
+Accounts/CreateAccount/
+ CreateAccountCommand.cs
+ CreateAccountCommandHandler.cs
+ CreateAccountCommandValidator.cs
+Accounts/DeactivateAccount/
+ DeactivateAccountCommand.cs
+ DeactivateAccountCommandHandler.cs
+Accounts/DeleteAccount/
+ DeleteAccountCommand.cs
+ DeleteAccountCommandHandler.cs
+Accounts/GetAccountById/
+ GetAccountByIdQuery.cs
+ GetAccountByIdQueryHandler.cs
+Accounts/GetAccountContacts/
+ GetAccountContactsQuery.cs
+ GetAccountContactsQueryHandler.cs
+Accounts/GetAccounts/
+ GetAccountsQuery.cs
+ GetAccountsQueryHandler.cs
+ GetAccountsQueryValidator.cs
+Accounts/GetPendingInvitations/
+ GetPendingInvitationsQuery.cs
+ GetPendingInvitationsQueryHandler.cs
+Accounts/InviteContact/
+ InviteContactCommand.cs
+ InviteContactCommandHandler.cs
+ InviteContactCommandValidator.cs
+Accounts/RemoveAccountContact/
+ RemoveAccountContactCommand.cs
+ RemoveAccountContactCommandHandler.cs
+ RemoveAccountContactCommandValidator.cs
+Accounts/ResendInvitation/
+ ResendInvitationCommand.cs
+ ResendInvitationCommandHandler.cs
+Accounts/UpdateAccount/
+ UpdateAccountCommand.cs
+ UpdateAccountCommandHandler.cs
+ UpdateAccountCommandValidator.cs
+Accounts/UpdateAccountContact/
+ UpdateAccountContactCommand.cs
+ UpdateAccountContactCommandHandler.cs
+ UpdateAccountContactCommandValidator.cs
+Accounts/UpdateContactPermissions/
+ UpdateContactPermissionsCommand.cs
+ UpdateContactPermissionsCommandHandler.cs
+ UpdateContactPermissionsCommandValidator.cs
+AuditLogs/Common/
+ AuditLogResponse.cs
+ AuditLogSearchConfiguration.cs
+ AuditLogSortConfiguration.cs
+AuditLogs/GetAuditLogById/
+ GetAuditLogByIdQuery.cs
+ GetAuditLogByIdQueryHandler.cs
+AuditLogs/GetAuditLogs/
+ GetAuditLogsQuery.cs
+ GetAuditLogsQueryHandler.cs
+ GetAuditLogsQueryValidator.cs
+AuditLogs/GetCurrentUserAuditLogs/
+ GetCurrentUserAuditLogsQuery.cs
+ GetCurrentUserAuditLogsQueryHandler.cs
+AuditLogs/GetUserAuditLogs/
+ GetUserAuditLogsQuery.cs
+ GetUserAuditLogsQueryHandler.cs
+ GetUserAuditLogsQueryValidator.cs
+Common/Filtering/
+ SearchableField.cs
+ SearchConfiguration.cs
+ SearchExtensions.cs
+Common/Sorting/
+ SortableField.cs
+ SortConfiguration.cs
+ SortingExtensions.cs
+DependencyInjection.cs
+Extensions/
+ PaginationExtensions.cs
+ ValidationExtensions.cs
+Notifications/ArchiveAll/
+ ArchiveAllCommand.cs
+ ArchiveAllCommandHandler.cs
+Notifications/Common/
+ NotificationDomainEventHandler.cs
+ NotificationResponses.cs
+Notifications/DeletePushToken/
+ DeletePushTokenCommand.cs
+ DeletePushTokenCommandHandler.cs
+Notifications/DismissNotification/
+ DismissNotificationCommand.cs
+ DismissNotificationCommandHandler.cs
+Notifications/GetArchivedNotifications/
+ GetArchivedNotificationsQuery.cs
+ GetArchivedNotificationsQueryHandler.cs
+Notifications/GetNotificationById/
+ GetNotificationByIdQuery.cs
+ GetNotificationByIdQueryHandler.cs
+Notifications/GetNotifications/
+ GetNotificationsQuery.cs
+ GetNotificationsQueryHandler.cs
+Notifications/GetNotificationTypes/
+ GetNotificationTypesQuery.cs
+ GetNotificationTypesQueryHandler.cs
+Notifications/GetPreferences/
+ GetPreferencesQuery.cs
+ GetPreferencesQueryHandler.cs
+Notifications/GetPushTokens/
+ GetPushTokensQuery.cs
+ GetPushTokensQueryHandler.cs
+Notifications/GetUnreadCount/
+ GetUnreadCountQuery.cs
+ GetUnreadCountQueryHandler.cs
+Notifications/MarkAllAsRead/
+ MarkAllAsReadCommand.cs
+ MarkAllAsReadCommandHandler.cs
+Notifications/MarkAsRead/
+ MarkAsReadCommand.cs
+ MarkAsReadCommandHandler.cs
+Notifications/MarkAsUnread/
+ MarkAsUnreadCommand.cs
+ MarkAsUnreadCommandHandler.cs
+Notifications/RegisterPushToken/
+ RegisterPushTokenCommand.cs
+ RegisterPushTokenCommandHandler.cs
+ RegisterPushTokenCommandValidator.cs
+Notifications/UpdatePreferences/
+ UpdatePreferencesCommand.cs
+ UpdatePreferencesCommandHandler.cs
+ UpdatePreferencesCommandValidator.cs
+Notifications/UpdateTypeSettings/
+ UpdateTypeSettingsCommand.cs
+ UpdateTypeSettingsCommandHandler.cs
+ UpdateTypeSettingsCommandValidator.cs
+obj/Debug/net10.0/
+ .NETCoreApp,Version=v10.0.AssemblyAttributes.cs
+ Application.AssemblyInfo.cs
+ Application.GlobalUsings.g.cs
+Permissions/GetPermissions/
+ GetPermissionsQuery.cs
+ GetPermissionsQueryHandler.cs
+Roles/ActivateRole/
+ ActivateRoleCommand.cs
+ ActivateRoleCommandHandler.cs
+Roles/Common/
+ PermissionResponse.cs
+ RoleResponse.cs
+ RoleSearchConfiguration.cs
+ RoleSortConfiguration.cs
+Roles/CreateRole/
+ CreateRoleCommand.cs
+ CreateRoleCommandHandler.cs
+ CreateRoleCommandValidator.cs
+Roles/DeactivateRole/
+ DeactivateRoleCommand.cs
+ DeactivateRoleCommandHandler.cs
+Roles/DeleteRole/
+ DeleteRoleCommand.cs
+ DeleteRoleCommandHandler.cs
+ DeleteRoleCommandValidator.cs
+Roles/GetRoleById/
+ GetRoleByIdQuery.cs
+ GetRoleByIdQueryHandler.cs
+Roles/GetRolePermissions/
+ GetRolePermissionsQuery.cs
+ GetRolePermissionsQueryHandler.cs
+Roles/GetRoles/
+ GetRolesQuery.cs
+ GetRolesQueryHandler.cs
+ GetRolesQueryValidator.cs
+Roles/UpdateRole/
+ UpdateRoleCommand.cs
+ UpdateRoleCommandHandler.cs
+ UpdateRoleCommandValidator.cs
+Roles/UpdateRolePermissions/
+ UpdateRolePermissionsCommand.cs
+ UpdateRolePermissionsCommandHandler.cs
+ UpdateRolePermissionsCommandValidator.cs
+StressDetection/Common/
+ DeviceResponses.cs
+ SessionResponses.cs
+ StressReadingResponses.cs
+StressDetection/Devices/GetMyDevices/
+ GetMyDevicesQuery.cs
+ GetMyDevicesQueryHandler.cs
+StressDetection/Devices/RegisterDevice/
+ RegisterDeviceCommand.cs
+ RegisterDeviceCommandHandler.cs
+ RegisterDeviceCommandValidator.cs
+StressDetection/Devices/RevokeDevice/
+ RevokeDeviceCommand.cs
+ RevokeDeviceCommandHandler.cs
+StressDetection/
+ EventHandlers/HighStressDetectedNotificationHandler.cs
+ Sessions/EndSession/
+  EndSessionCommand.cs
+  EndSessionCommandHandler.cs
+ Sessions/GetActiveSession/
+  GetActiveSessionQuery.cs
+  GetActiveSessionQueryHandler.cs
+ Sessions/GetSessionById/
+  GetSessionByIdQuery.cs
+  GetSessionByIdQueryHandler.cs
+ Sessions/GetSessions/
+  GetSessionsQuery.cs
+  GetSessionsQueryHandler.cs
+ Sessions/PauseSession/
+  PauseSessionCommand.cs
+  PauseSessionCommandHandler.cs
+ Sessions/ResumeSession/
+  ResumeSessionCommand.cs
+  ResumeSessionCommandHandler.cs
+ Sessions/StartSession/
+  StartSessionCommand.cs
+  StartSessionCommandHandler.cs
+  StartSessionCommandValidator.cs
+ Stress/GetCurrentStress/
+  GetCurrentStressQuery.cs
+  GetCurrentStressQueryHandler.cs
+ Stress/GetReadings/
+  GetReadingsQuery.cs
+  GetReadingsQueryHandler.cs
+ Stress/GetTrends/
+  GetTrendsQuery.cs
+  GetTrendsQueryHandler.cs
+  GetTrendsQueryValidator.cs
+ Stress/SubmitMetrics/
+  SubmitMetricsCommand.cs
+  SubmitMetricsCommandHandler.cs
+  SubmitMetricsCommandValidator.cs
+Users/ActivateUser/
+ ActivateUserCommand.cs
+ ActivateUserCommandHandler.cs
+ ActivateUserCommandValidator.cs
+Users/AssignRole/
+ AssignRoleCommand.cs
+ AssignRoleCommandHandler.cs
+ AssignRoleCommandValidator.cs
+Users/ChangePassword/
+ ChangePasswordCommand.cs
+ ChangePasswordCommandHandler.cs
+ ChangePasswordCommandValidator.cs
+Users/Common/
+ UserProfileResponse.cs
+ UserResponse.cs
+ UserSearchConfiguration.cs
+ UserSortConfiguration.cs
+Users/ConfirmEmail/
+ ConfirmEmailCommand.cs
+ ConfirmEmailCommandHandler.cs
+ ConfirmEmailCommandValidator.cs
+Users/DeactivateUser/
+ DeactivateUserCommand.cs
+ DeactivateUserCommandHandler.cs
+ DeactivateUserCommandValidator.cs
+Users/DeleteUser/
+ DeleteUserCommand.cs
+ DeleteUserCommandHandler.cs
+ DeleteUserCommandValidator.cs
+Users/Disable2FA/
+ Disable2FACommand.cs
+ Disable2FACommandHandler.cs
+ Disable2FACommandValidator.cs
+Users/Enable2FA/
+ Enable2FACommand.cs
+ Enable2FACommandHandler.cs
+ Enable2FACommandValidator.cs
+Users/ForgotPassword/
+ ForgotPasswordCommand.cs
+ ForgotPasswordCommandHandler.cs
+ ForgotPasswordCommandValidator.cs
+Users/GetByEmail/
+ GetUserByEmailQuery.cs
+ GetUserByEmailQueryHandler.cs
+Users/GetById/
+ GetUserByIdQuery.cs
+ GetUserByIdQueryHandler.cs
+Users/GetCurrentUser/
+ GetCurrentUserQuery.cs
+ GetCurrentUserQueryHandler.cs
+Users/GetCurrentUserProfile/
+ GetCurrentUserProfileQuery.cs
+ GetCurrentUserProfileQueryHandler.cs
+Users/GetCurrentUserSessions/
+ GetCurrentUserSessionsQuery.cs
+ GetCurrentUserSessionsQueryHandler.cs
+Users/GetUserProfile/
+ GetUserProfileQuery.cs
+ GetUserProfileQueryHandler.cs
+Users/GetUserRoles/
+ GetUserRolesQuery.cs
+ GetUserRolesQueryHandler.cs
+Users/GetUsers/
+ GetUsersQuery.cs
+ GetUsersQueryHandler.cs
+ GetUsersQueryValidator.cs
+ UserListItemResponse.cs
+Users/GetUserSessions/
+ GetUserSessionsQuery.cs
+ GetUserSessionsQueryHandler.cs
+Users/Login/
+ LoginUserCommand.cs
+ LoginUserCommandHandler.cs
+Users/Login2FA/
+ Login2FACommand.cs
+ Login2FACommandHandler.cs
+ Login2FACommandValidator.cs
+Users/Logout/
+ LogoutCommand.cs
+ LogoutCommandHandler.cs
+Users/RefreshToken/
+ RefreshTokenCommand.cs
+ RefreshTokenCommandHandler.cs
+ RefreshTokenCommandValidator.cs
+Users/Register/
+ RegisterUserCommand.cs
+ RegisterUserCommandHandler.cs
+ RegisterUserCommandValidator.cs
+ UserRegisteredDomainEventHandler.cs
+Users/RemoveRole/
+ RemoveRoleCommand.cs
+ RemoveRoleCommandHandler.cs
+ RemoveRoleCommandValidator.cs
+Users/ResendConfirmation/
+ ResendConfirmationCommand.cs
+ ResendConfirmationCommandHandler.cs
+ ResendConfirmationCommandValidator.cs
+Users/ResetPassword/
+ ResetPasswordCommand.cs
+ ResetPasswordCommandHandler.cs
+ ResetPasswordCommandValidator.cs
+Users/RevokeAllSessions/
+ RevokeAllSessionsCommand.cs
+ RevokeAllSessionsCommandHandler.cs
+Users/RevokeSession/
+ RevokeSessionCommand.cs
+ RevokeSessionCommandHandler.cs
+ RevokeSessionCommandValidator.cs
+Users/SuspendUser/
+ SuspendUserCommand.cs
+ SuspendUserCommandHandler.cs
+ SuspendUserCommandValidator.cs
+Users/UpdateCurrentUser/
+ UpdateCurrentUserCommand.cs
+ UpdateCurrentUserCommandHandler.cs
+ UpdateCurrentUserCommandValidator.cs
+Users/UpdateCurrentUserProfile/
+ UpdateCurrentUserProfileCommand.cs
+ UpdateCurrentUserProfileCommandHandler.cs
+ UpdateCurrentUserProfileCommandValidator.cs
+Users/UpdateUser/
+ UpdateUserCommand.cs
+ UpdateUserCommandHandler.cs
+ UpdateUserCommandValidator.cs
+Users/UpdateUserProfile/
+ UpdateUserProfileCommand.cs
+ UpdateUserProfileCommandHandler.cs
+ UpdateUserProfileCommandValidator.cs
+Users/Verify2FA/
+ Verify2FACommand.cs
+ Verify2FACommandHandler.cs
+ Verify2FACommandValidator.cs
+
+[metadataReferences]
+../
+ Domain/obj/Debug/net10.0/ref/Domain.dll
+ SharedKernel/obj/Debug/net10.0/ref/SharedKernel.dll
+<DOTNET>/packs/Microsoft.NETCore.App.Ref/10.0.5/ref/net10.0/
+ Microsoft.CSharp.dll
+ Microsoft.VisualBasic.Core.dll
+ Microsoft.VisualBasic.dll
+ Microsoft.Win32.Primitives.dll
+ Microsoft.Win32.Registry.dll
+ mscorlib.dll
+ netstandard.dll
+ System.AppContext.dll
+ System.Buffers.dll
+ System.Collections.Concurrent.dll
+ System.Collections.dll
+ System.Collections.Immutable.dll
+ System.Collections.NonGeneric.dll
+ System.Collections.Specialized.dll
+ System.ComponentModel.Annotations.dll
+ System.ComponentModel.DataAnnotations.dll
+ System.ComponentModel.dll
+ System.ComponentModel.EventBasedAsync.dll
+ System.ComponentModel.Primitives.dll
+ System.ComponentModel.TypeConverter.dll
+ System.Configuration.dll
+ System.Console.dll
+ System.Core.dll
+ System.Data.Common.dll
+ System.Data.DataSetExtensions.dll
+ System.Data.dll
+ System.Diagnostics.Contracts.dll
+ System.Diagnostics.Debug.dll
+ System.Diagnostics.DiagnosticSource.dll
+ System.Diagnostics.FileVersionInfo.dll
+ System.Diagnostics.Process.dll
+ System.Diagnostics.StackTrace.dll
+ System.Diagnostics.TextWriterTraceListener.dll
+ System.Diagnostics.Tools.dll
+ System.Diagnostics.TraceSource.dll
+ System.Diagnostics.Tracing.dll
+ System.dll
+ System.Drawing.dll
+ System.Drawing.Primitives.dll
+ System.Dynamic.Runtime.dll
+ System.Formats.Asn1.dll
+ System.Formats.Tar.dll
+ System.Globalization.Calendars.dll
+ System.Globalization.dll
+ System.Globalization.Extensions.dll
+ System.IO.Compression.Brotli.dll
+ System.IO.Compression.dll
+ System.IO.Compression.FileSystem.dll
+ System.IO.Compression.ZipFile.dll
+ System.IO.dll
+ System.IO.FileSystem.AccessControl.dll
+ System.IO.FileSystem.dll
+ System.IO.FileSystem.DriveInfo.dll
+ System.IO.FileSystem.Primitives.dll
+ System.IO.FileSystem.Watcher.dll
+ System.IO.IsolatedStorage.dll
+ System.IO.MemoryMappedFiles.dll
+ System.IO.Pipelines.dll
+ System.IO.Pipes.AccessControl.dll
+ System.IO.Pipes.dll
+ System.IO.UnmanagedMemoryStream.dll
+ System.Linq.AsyncEnumerable.dll
+ System.Linq.dll
+ System.Linq.Expressions.dll
+ System.Linq.Parallel.dll
+ System.Linq.Queryable.dll
+ System.Memory.dll
+ System.Net.dll
+ System.Net.Http.dll
+ System.Net.Http.Json.dll
+ System.Net.HttpListener.dll
+ System.Net.Mail.dll
+ System.Net.NameResolution.dll
+ System.Net.NetworkInformation.dll
+ System.Net.Ping.dll
+ System.Net.Primitives.dll
+ System.Net.Quic.dll
+ System.Net.Requests.dll
+ System.Net.Security.dll
+ System.Net.ServerSentEvents.dll
+ System.Net.ServicePoint.dll
+ System.Net.Sockets.dll
+ System.Net.WebClient.dll
+ System.Net.WebHeaderCollection.dll
+ System.Net.WebProxy.dll
+ System.Net.WebSockets.Client.dll
+ System.Net.WebSockets.dll
+ System.Numerics.dll
+ System.Numerics.Vectors.dll
+ System.ObjectModel.dll
+ System.Reflection.DispatchProxy.dll
+ System.Reflection.dll
+ System.Reflection.Emit.dll
+ System.Reflection.Emit.ILGeneration.dll
+ System.Reflection.Emit.Lightweight.dll
+ System.Reflection.Extensions.dll
+ System.Reflection.Metadata.dll
+ System.Reflection.Primitives.dll
+ System.Reflection.TypeExtensions.dll
+ System.Resources.Reader.dll
+ System.Resources.ResourceManager.dll
+ System.Resources.Writer.dll
+ System.Runtime.CompilerServices.Unsafe.dll
+ System.Runtime.CompilerServices.VisualC.dll
+ System.Runtime.dll
+ System.Runtime.Extensions.dll
+ System.Runtime.Handles.dll
+ System.Runtime.InteropServices.dll
+ System.Runtime.InteropServices.JavaScript.dll
+ System.Runtime.InteropServices.RuntimeInformation.dll
+ System.Runtime.Intrinsics.dll
+ System.Runtime.Loader.dll
+ System.Runtime.Numerics.dll
+ System.Runtime.Serialization.dll
+ System.Runtime.Serialization.Formatters.dll
+ System.Runtime.Serialization.Json.dll
+ System.Runtime.Serialization.Primitives.dll
+ System.Runtime.Serialization.Xml.dll
+ System.Security.AccessControl.dll
+ System.Security.Claims.dll
+ System.Security.Cryptography.Algorithms.dll
+ System.Security.Cryptography.Cng.dll
+ System.Security.Cryptography.Csp.dll
+ System.Security.Cryptography.dll
+ System.Security.Cryptography.Encoding.dll
+ System.Security.Cryptography.OpenSsl.dll
+ System.Security.Cryptography.Primitives.dll
+ System.Security.Cryptography.X509Certificates.dll
+ System.Security.dll
+ System.Security.Principal.dll
+ System.Security.Principal.Windows.dll
+ System.Security.SecureString.dll
+ System.ServiceModel.Web.dll
+ System.ServiceProcess.dll
+ System.Text.Encoding.CodePages.dll
+ System.Text.Encoding.dll
+ System.Text.Encoding.Extensions.dll
+ System.Text.Encodings.Web.dll
+ System.Text.Json.dll
+ System.Text.RegularExpressions.dll
+ System.Threading.AccessControl.dll
+ System.Threading.Channels.dll
+ System.Threading.dll
+ System.Threading.Overlapped.dll
+ System.Threading.Tasks.Dataflow.dll
+ System.Threading.Tasks.dll
+ System.Threading.Tasks.Extensions.dll
+ System.Threading.Tasks.Parallel.dll
+ System.Threading.Thread.dll
+ System.Threading.ThreadPool.dll
+ System.Threading.Timer.dll
+ System.Transactions.dll
+ System.Transactions.Local.dll
+ System.ValueTuple.dll
+ System.Web.dll
+ System.Web.HttpUtility.dll
+ System.Windows.dll
+ System.Xml.dll
+ System.Xml.Linq.dll
+ System.Xml.ReaderWriter.dll
+ System.Xml.Serialization.dll
+ System.Xml.XDocument.dll
+ System.Xml.XmlDocument.dll
+ System.Xml.XmlSerializer.dll
+ System.Xml.XPath.dll
+ System.Xml.XPath.XDocument.dll
+ WindowsBase.dll
+<NUGET>/
+ fluentvalidation.dependencyinjectionextensions/12.1.0/lib/net8.0/FluentValidation.DependencyInjectionExtensions.dll
+ fluentvalidation/12.1.0/lib/net8.0/FluentValidation.dll
+ microsoft.entityframeworkcore.abstractions/10.0.0/lib/net10.0/Microsoft.EntityFrameworkCore.Abstractions.dll
+ microsoft.entityframeworkcore/10.0.0/lib/net10.0/Microsoft.EntityFrameworkCore.dll
+ microsoft.extensions.caching.abstractions/10.0.0/lib/net10.0/Microsoft.Extensions.Caching.Abstractions.dll
+ microsoft.extensions.caching.memory/10.0.0/lib/net10.0/Microsoft.Extensions.Caching.Memory.dll
+ microsoft.extensions.dependencyinjection.abstractions/10.0.0/lib/net10.0/Microsoft.Extensions.DependencyInjection.Abstractions.dll
+ microsoft.extensions.dependencyinjection/10.0.0/lib/net10.0/Microsoft.Extensions.DependencyInjection.dll
+ microsoft.extensions.dependencymodel/8.0.2/lib/net8.0/Microsoft.Extensions.DependencyModel.dll
+ microsoft.extensions.logging.abstractions/10.0.0/lib/net10.0/Microsoft.Extensions.Logging.Abstractions.dll
+ microsoft.extensions.logging/10.0.0/lib/net10.0/Microsoft.Extensions.Logging.dll
+ microsoft.extensions.options/10.0.0/lib/net10.0/Microsoft.Extensions.Options.dll
+ microsoft.extensions.primitives/10.0.0/lib/net10.0/Microsoft.Extensions.Primitives.dll
+ scrutor/6.1.0/lib/net8.0/Scrutor.dll
+ serilog/4.3.0/lib/net9.0/Serilog.dll
+
+[analyzerReferences]
+<DOTNET>/packs/Microsoft.NETCore.App.Ref/10.0.5/analyzers/dotnet/cs/
+ Microsoft.Interop.ComInterfaceGenerator.dll
+ Microsoft.Interop.JavaScript.JSImportGenerator.dll
+ Microsoft.Interop.LibraryImportGenerator.dll
+ Microsoft.Interop.SourceGeneration.dll
+ System.Text.Json.SourceGeneration.dll
+ System.Text.RegularExpressions.Generator.dll
+<DOTNET>/sdk/10.0.201/Sdks/Microsoft.NET.Sdk/analyzers/
+ Microsoft.CodeAnalysis.CSharp.NetAnalyzers.dll
+ Microsoft.CodeAnalysis.NetAnalyzers.dll
+<DOTNET>/sdk/10.0.201/Sdks/Microsoft.NET.Sdk/codestyle/cs/
+ Microsoft.CodeAnalysis.CodeStyle.dll
+ Microsoft.CodeAnalysis.CodeStyle.Fixes.dll
+ Microsoft.CodeAnalysis.CSharp.CodeStyle.dll
+ Microsoft.CodeAnalysis.CSharp.CodeStyle.Fixes.dll
+<NUGET>/
+ microsoft.entityframeworkcore.analyzers/10.0.0/analyzers/dotnet/cs/Microsoft.EntityFrameworkCore.Analyzers.dll
+ microsoft.extensions.logging.abstractions/10.0.0/analyzers/dotnet/roslyn4.4/cs/Microsoft.Extensions.Logging.Generators.dll
+ microsoft.extensions.options/10.0.0/analyzers/dotnet/roslyn4.4/cs/Microsoft.Extensions.Options.SourceGeneration.dll
+ sonaranalyzer.csharp/10.15.0.120848/analyzers/SonarAnalyzer.CSharp.dll
+
+[analyzerConfigFiles]
+../../.editorconfig
+<DOTNET>/sdk/10.0.201/Sdks/Microsoft.NET.Sdk/analyzers/build/config/analysislevel_10_all_warnaserror.globalconfig
+obj/Debug/net10.0/Application.GeneratedMSBuildEditorConfig.editorconfig

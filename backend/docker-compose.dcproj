@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="15.0" Sdk="Microsoft.Docker.Sdk">
+  <PropertyGroup Label="Globals">
+    <ProjectVersion>2.1</ProjectVersion>
+    <DockerTargetOS>Linux</DockerTargetOS>
+    <ProjectGuid>34bb3069-d5d0-4046-acad-a2025ed7678f</ProjectGuid>
+    <DockerLaunchAction>LaunchBrowser</DockerLaunchAction>
+    <DockerServiceUrl>{Scheme}://localhost:{ServicePort}/swagger</DockerServiceUrl>
+    <DockerServiceName>web.api</DockerServiceName>
+    <DockerComposeProjectName>clean-architecture</DockerComposeProjectName>
+  </PropertyGroup>
+  <ItemGroup>
+    <None Include="docker-compose.override.yml">
+      <DependentUpon>docker-compose.yml</DependentUpon>
+    </None>
+    <None Include=".dockerignore" />
+    <None Include="docker-compose.yml" />
+    <None Include="docs\All-Phases-Summary.md" />
+    <None Include="docs\API-Endpoints-Reference.md" />
+    <None Include="docs\Complete-Summary.md" />
+    <None Include="docs\Global-Paginator-ExceptionHandler.md" />
+    <None Include="docs\ONEX-ERD.md" />
+    <None Include="docs\ONEX-Features.md" />
+    <None Include="docs\Phase0-Notifications-Complete.md" />
+    <None Include="docs\Phase1-Complete-Summary.md" />
+    <None Include="docs\Phase2-Migration-Guide.md" />
+    <None Include="docs\Phase2-Progress.md" />
+    <None Include="docs\Phase2-Summary.md" />
+    <None Include="docs\Phase3-Complete.md" />
+    <None Include="docs\Phase3-Summary.md" />
+    <None Include="docs\Phase4-Complete.md" />
+    <None Include="docs\Phase5-Complete.md" />
+    <None Include="docs\Phase6-Complete.md" />
+    <None Include="docs\Phase7-ContactInvitationFlow.md" />
+    <None Include="tests\2fa-flow-test.ps1" />
+    <None Include="tests\api-test.ps1" />
+    <None Include="tests\complete-api-test.ps1" />
+    <None Include="tests\full-api-test.ps1" />
+    <None Include="tests\invitation-flow-test.ps1" />
+    <None Include="tests\notifications-test.ps1" />
+    <None Include="tests\test-inapp-notifications.ps1" />
+  </ItemGroup>
+</Project>

@@ -1,0 +1,62 @@
+services:
+  web-api:
+    image: ${DOCKER_REGISTRY-}webapi
+    container_name: web-api
+    build:
+      context: .
+      dockerfile: src/Web.Api/Dockerfile
+    ports:
+      - 5000:8080
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+      - ASPNETCORE_URLS=http://+:8080
+      - ConnectionStrings__Database=Host=postgres;Port=5432;Database=clean-architecture;Username=postgres;Password=postgres
+      - Serilog__WriteTo__1__Args__ServerUrl=http://seq:80
+      - Email__SmtpHost=mailpit
+      - StressDetection__BaseUrl=http://host.docker.internal:8000
+    restart: on-failure
+    depends_on:
+      postgres:
+        condition: service_healthy
+      mailpit:
+        condition: service_started
+      seq:
+        condition: service_started
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+
+  postgres:
+    image: postgres:17
+    container_name: postgres
+    environment:
+      - POSTGRES_DB=clean-architecture
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+    volumes:
+      - ./.containers/db:/var/lib/postgresql/data
+    ports:
+      - 5433:5432
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d clean-architecture"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+      start_period: 10s
+
+  mailpit:
+    image: axllent/mailpit:latest
+    container_name: mailpit
+    ports:
+      - 1025:1025
+      - 8025:8025
+    environment:
+      - MP_SMTP_AUTH_ACCEPT_ANY=true
+      - MP_SMTP_AUTH_ALLOW_INSECURE=true
+
+  seq:
+    image: datalust/seq:2024.3
+    container_name: seq
+    environment:
+      - ACCEPT_EULA=Y
+    ports:
+      - 8081:80
