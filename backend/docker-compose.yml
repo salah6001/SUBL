@@ -13,7 +13,7 @@ services:
       - ConnectionStrings__Database=Host=postgres;Port=5432;Database=clean-architecture;Username=postgres;Password=postgres
       - Serilog__WriteTo__1__Args__ServerUrl=http://seq:80
       - Email__SmtpHost=mailpit
-      - StressDetection__BaseUrl=http://host.docker.internal:8000
+      - StressDetection__BaseUrl=http://ml-service:8000
     restart: on-failure
     depends_on:
       postgres:
@@ -22,8 +22,8 @@ services:
         condition: service_started
       seq:
         condition: service_started
-    extra_hosts:
-      - "host.docker.internal:host-gateway"
+      ml-service:
+        condition: service_started
 
   postgres:
     image: postgres:17
@@ -60,3 +60,13 @@ services:
       - ACCEPT_EULA=Y
     ports:
       - 8081:80
+
+  ml-service:
+    image: mindtype-ml-service
+    container_name: ml-service
+    build:
+      context: ../new_data/mindtype-ai
+      dockerfile: Dockerfile
+    ports:
+      - 8000:8000
+    restart: unless-stopped
