@@ -13,3 +13,8 @@ Thumbs.db
 # IDE settings
 .vscode/settings.json
 .idea/workspace.xml
+
+# Unused demo/deprecated folders
+Moamen UI + frontend/
+if_needed/
+data & ai by ElDeep/

@@ -1,0 +1,31 @@
+{
+  "name": "MindType AI Stress Level Classifier",
+  "version": "1.0.0",
+  "artifact_path": "C:\\كتب لازم اخلصها عشان ابقى عالم بيانات\\subl\\subl-main\\subl-main\\data & ai by ElDeep\\mindtype-ai\\model\\stress_model.pkl",
+  "feature_names": [
+    "mean_dwell",
+    "std_dwell",
+    "mean_flight",
+    "std_flight",
+    "median_flight",
+    "cv_flight",
+    "mean_del_freq",
+    "n_keys",
+    "mean_left_freq",
+    "mean_tot_time",
+    "typistType",
+    "pcTimeAverage",
+    "ageRange",
+    "gender"
+  ],
+  "classes": [
+    0,
+    1,
+    2
+  ],
+  "mapping": {
+    "0": "Low",
+    "1": "Optimal",
+    "2": "High"
+  }
+}

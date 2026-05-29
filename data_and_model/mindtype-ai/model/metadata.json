@@ -1,0 +1,55 @@
+{
+  "model_name": "MindType AI — Emotion Classifier",
+  "version": "1.0.0",
+  "created": "2026-05-14",
+  "algorithm": "RandomForestClassifier",
+  "n_estimators": 200,
+  "class_weight": "balanced",
+  "feature_names": [
+    "mean_dwell",
+    "median_flight",
+    "cv_flight",
+    "mean_del_freq",
+    "mean_tot_time"
+  ],
+  "emotion_classes": [
+    "A",
+    "C",
+    "H",
+    "N",
+    "S"
+  ],
+  "stress_classes": [
+    "A",
+    "S"
+  ],
+  "emotion_labels": {
+    "A": "Angry",
+    "C": "Calm",
+    "H": "Happy",
+    "N": "Neutral",
+    "S": "Sad"
+  },
+  "performance": {
+    "cv_accuracy": 0.8054,
+    "test_accuracy": 0.8361,
+    "test_f1_macro": 0.7924,
+    "binary_stress_f1": 0.9189
+  },
+  "thresholds": {
+    "stress_low": 0.35,
+    "stress_medium": 0.55,
+    "hidden_stress_delta": 0.2
+  },
+  "preprocessing": "StandardScaler",
+  "smote_balanced": false,
+  "training_samples": 303,
+  "dataset": "EmoSurv",
+  "feature_importance": {
+    "mean_tot_time": 0.28720754582572916,
+    "median_flight": 0.20831386143515135,
+    "mean_dwell": 0.20026688269386914,
+    "cv_flight": 0.17502000728107572,
+    "mean_del_freq": 0.12919170276417472
+  }
+}

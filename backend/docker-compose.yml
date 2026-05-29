@@ -65,7 +65,7 @@ services:
     image: mindtype-ml-service
     container_name: ml-service
     build:
-      context: ../new_data/mindtype-ai
+      context: ../data_and_model/mindtype-ai
       dockerfile: Dockerfile
     ports:
       - 8000:8000
