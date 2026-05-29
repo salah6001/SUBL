@@ -23,7 +23,7 @@ services:
       seq:
         condition: service_started
       ml-service:
-        condition: service_started
+        condition: service_healthy
 
   postgres:
     image: postgres:17
@@ -70,3 +70,9 @@ services:
     ports:
       - 8000:8000
     restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "python3", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/health')"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 15s
