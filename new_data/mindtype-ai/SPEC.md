@@ -217,6 +217,34 @@ dotnet ef database update \
 | PostgreSQL: all 4 stress tables | ✅ Present |
 | `docker compose up` | ✅ All 5 containers start cleanly |
 
+### Verified Full Pipeline (2026-05-29)
+
+```bash
+# 1. Login (seed user)
+POST /users/login → JWT token
+
+# 2. Register device
+POST /devices → DeviceId: 8b44ce9b-...
+
+# 3. Start session
+POST /stress-sessions/start → SessionId: 487146ba-...
+
+# 4. Submit metrics → triggers ML call
+POST /stress-sessions/{sessionId}/metrics
+  Body: { meanDwell, medianFlight, cvFlight, meanDelFreq, meanTotTime, nKeys }
+  ↓
+  .NET calls http://ml-service:8000/predict-stress
+  ↓
+  Response: { score: 0.145, level: "Low", confidence: 0.725 }
+
+# Web-api logs confirm the call:
+# "Start processing HTTP request POST http://ml-service:8000/predict-stress"
+# "Sending HTTP request POST http://ml-service:8000/predict-stress"
+# INSERT INTO public.stress_readings (...) values (...)
+```
+
+Seed credentials for testing: `admin@onex.com` / `Admin@123!`
+
 ---
 
 ## 8. Files That Implement the Bridge
