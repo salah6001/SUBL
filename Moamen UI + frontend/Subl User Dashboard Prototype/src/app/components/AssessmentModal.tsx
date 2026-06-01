@@ -1,12 +1,27 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { X, CheckCircle, AlertTriangle, ChevronRight, BarChart2, Clock, Keyboard, Coffee } from "lucide-react";
-import { assessmentQuestions, typingTestParagraph } from "../data/mockData";
+import { assessmentQuestions as mockQuestions, typingTestParagraph } from "../data/mockData";
+import { surveyApi } from "../api/survey";
 
 const LIKERT = ["Never", "Rarely", "Sometimes", "Often", "Always"];
 
 export function AssessmentModal({ onClose }: { onClose: () => void }) {
+  const [questions, setQuestions] = useState(mockQuestions);
   const [step, setStep] = useState(1);
   const [answers, setAnswers] = useState<Record<string, number>>({});
+
+  useEffect(() => {
+    surveyApi.getQuestions()
+      .then(({ questions: qs }) => {
+        const mapped = qs.map((q, i) => ({
+          id: `q${q.id ?? i + 1}`,
+          text: q.text,
+          category: mockQuestions[i]?.category ?? "General",
+        }));
+        if (mapped.length > 0) setQuestions(mapped);
+      })
+      .catch(() => { /* keep mock */ });
+  }, []);
   const [typed, setTyped] = useState("");
   const [startTime, setStartTime] = useState<number | null>(null);
   const [typingDone, setTypingDone] = useState(false);
@@ -15,7 +30,7 @@ export function AssessmentModal({ onClose }: { onClose: () => void }) {
   const [calculating, setCalculating] = useState(false);
   const textRef = useRef<HTMLTextAreaElement>(null);
 
-  const answeredAll = Object.keys(answers).length >= assessmentQuestions.length;
+  const answeredAll = Object.keys(answers).length >= questions.length;
 
   const handleType = (v: string) => {
     if (!startTime && v.length === 1) setStartTime(Date.now());
@@ -30,14 +45,26 @@ export function AssessmentModal({ onClose }: { onClose: () => void }) {
 
   const goResults = () => {
     setCalculating(true);
-    const avg = Object.values(answers).reduce((a, b) => a + b, 0) / Math.max(assessmentQuestions.length, 1);
-    const psych = (avg / 5) * 62;
-    const typFactor = typingDone ? Math.max(0, (1 - wpm / 100) * 38) : 20;
-    setTimeout(() => {
-      setScore(Math.min(100, Math.max(5, Math.round(psych + typFactor))));
-      setCalculating(false);
-      setStep(3);
-    }, 1600);
+    const q1 = answers["q1"] ?? 3;
+    const q2 = answers["q2"] ?? 3;
+    const q3 = answers["q3"] ?? 3;
+    const q4 = answers["q4"] ?? 3;
+    const q5 = answers["q5"] ?? 3;
+
+    surveyApi.submit(q1, q2, q3, q4, q5)
+      .then(result => {
+        setScore(Math.min(100, Math.max(5, Math.round(result.score))));
+      })
+      .catch(() => {
+        const avg = (q1 + q2 + q3 + q4 + q5) / 5;
+        const psych = (avg / 5) * 62;
+        const typFactor = typingDone ? Math.max(0, (1 - wpm / 100) * 38) : 20;
+        setScore(Math.min(100, Math.max(5, Math.round(psych + typFactor))));
+      })
+      .finally(() => {
+        setCalculating(false);
+        setStep(3);
+      });
   };
 
   const reset = () => {
@@ -100,7 +127,7 @@ export function AssessmentModal({ onClose }: { onClose: () => void }) {
               <p className="text-xs text-slate-500 dark:text-slate-400">
                 Rate your experience over the past 7 days. No right or wrong answers.
               </p>
-              {assessmentQuestions.map((q, i) => (
+              {questions.map((q, i) => (
                 <div key={q.id}>
                   <div className="flex items-start gap-2.5 mb-2.5">
                     <span className="w-5 h-5 rounded-full bg-blue-50 dark:bg-blue-950/50 text-blue-600 dark:text-blue-400 flex items-center justify-center text-[10px] shrink-0 mt-0.5">
@@ -236,7 +263,7 @@ export function AssessmentModal({ onClose }: { onClose: () => void }) {
           {step === 1 && (
             <>
               <span className="text-xs text-slate-400 dark:text-slate-500">
-                {Object.keys(answers).length}/{assessmentQuestions.length} answered
+                {Object.keys(answers).length}/{questions.length} answered
               </span>
               <button onClick={() => setStep(2)} disabled={!answeredAll}
                 className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-xl text-sm hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors">

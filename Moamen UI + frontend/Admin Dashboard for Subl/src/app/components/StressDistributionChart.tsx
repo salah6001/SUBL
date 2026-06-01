@@ -1,10 +1,14 @@
+import { useEffect, useState } from "react";
 import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer } from "recharts";
+import { dashboardApi } from "../api/dashboard";
 
-const data = [
-  { name: "Normal",      value: 60, color: "#22c55e" },
-  { name: "Calm",        value: 20, color: "#3b82f6" },
-  { name: "High Stress", value: 15, color: "#f97316" },
-  { name: "Burnout Risk",value: 5,  color: "#ef4444" },
+interface Slice { name: string; value: number; color: string; }
+
+const FALLBACK: Slice[] = [
+  { name: "Normal",       value: 60, color: "#22c55e" },
+  { name: "Calm",         value: 20, color: "#3b82f6" },
+  { name: "High Stress",  value: 15, color: "#f97316" },
+  { name: "Burnout Risk", value:  5, color: "#ef4444" },
 ];
 
 interface CustomTooltipProps {
@@ -13,7 +17,7 @@ interface CustomTooltipProps {
 }
 
 function CustomTooltip({ active, payload }: CustomTooltipProps) {
-  if (!active || !payload || !payload.length) return null;
+  if (!active || !payload?.length) return null;
   const item = payload[0];
   return (
     <div className="bg-white dark:bg-slate-800 border border-slate-100 dark:border-slate-700 rounded-xl px-4 py-3 shadow-lg">
@@ -27,6 +31,23 @@ function CustomTooltip({ active, payload }: CustomTooltipProps) {
 }
 
 export function StressDistributionChart() {
+  const [data, setData] = useState<Slice[]>(FALLBACK);
+
+  useEffect(() => {
+    dashboardApi.getDistribution()
+      .then(d => {
+        setData([
+          { name: "Normal",       value: d.normal,      color: "#22c55e" },
+          { name: "Calm",         value: d.calm,        color: "#3b82f6" },
+          { name: "High Stress",  value: d.highStress,  color: "#f97316" },
+          { name: "Burnout Risk", value: d.burnoutRisk, color: "#ef4444" },
+        ]);
+      })
+      .catch(() => { /* keep fallback */ });
+  }, []);
+
+  const stablePercent = Math.round(data[0].value + data[1].value);
+
   return (
     <div className="bg-white dark:bg-slate-900 rounded-2xl p-6 shadow-sm border border-slate-100 dark:border-slate-800">
       <div className="mb-2">
@@ -37,19 +58,8 @@ export function StressDistributionChart() {
       <div className="flex flex-col items-center">
         <ResponsiveContainer width="100%" height={200}>
           <PieChart>
-            <Pie
-              data={data}
-              cx="50%"
-              cy="50%"
-              innerRadius={55}
-              outerRadius={85}
-              paddingAngle={3}
-              dataKey="value"
-              stroke="none"
-              animationBegin={0}
-              animationDuration={800}
-            >
-              {data.map((entry) => (
+            <Pie data={data} cx="50%" cy="50%" innerRadius={55} outerRadius={85} paddingAngle={3} dataKey="value" stroke="none" animationBegin={0} animationDuration={800}>
+              {data.map(entry => (
                 <Cell key={entry.name} fill={entry.color} />
               ))}
             </Pie>
@@ -77,7 +87,7 @@ export function StressDistributionChart() {
           <span style={{ fontSize: "1rem" }}>✅</span>
         </div>
         <div>
-          <p className="text-green-700 dark:text-green-400" style={{ fontSize: "0.78rem", fontWeight: 600 }}>80% workforce stable</p>
+          <p className="text-green-700 dark:text-green-400" style={{ fontSize: "0.78rem", fontWeight: 600 }}>{stablePercent}% workforce stable</p>
           <p className="text-green-600 dark:text-green-500" style={{ fontSize: "0.72rem" }}>Normal or Calm stress levels detected</p>
         </div>
       </div>

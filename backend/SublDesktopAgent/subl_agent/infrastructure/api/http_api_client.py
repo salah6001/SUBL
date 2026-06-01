@@ -249,7 +249,7 @@ class HttpApiClient(ApiGateway):
     def _sign_webhook(self, timestamp: str, body: str) -> str:
         message = f"{timestamp}.{body}".encode("utf-8")
         secret = self._webhook_secret.encode("utf-8")
-        return hmac.new(secret, message, hashlib.sha256).hexdigest()
+        return hmac.HMAC(secret, message, hashlib.sha256).hexdigest()
 
     # ------------------------------------------------------------------
     # Emotion
