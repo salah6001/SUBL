@@ -1,20 +1,42 @@
-# Personal/Private files
-*.private
+# Dependencies
+node_modules/
 
-# OS files
+# Build output
+dist/
+dist-ssr/
+build/
+.output/
+
+# Environment overrides
+.env.local
+.env.*.local
+
+# Logs
+*.log
+npm-debug.log*
+pnpm-debug.log*
+yarn-debug.log*
+
+# OS / editor noise
 .DS_Store
 Thumbs.db
-.venv
-
-# Temporary files
 *~
 *.tmp
+.vscode/
+.idea/
 
-# IDE settings
-.vscode/settings.json
-.idea/workspace.xml
+# Python
+.venv/
+__pycache__/
+*.pyc
 
-# Unused demo/deprecated folders
-Moamen UI + frontend/
+# Tool caches
+.wrangler/
+.cache/
+.claude/
+
+# Deprecated / private
+*.private
+frontend/
 if_needed/
-data & ai by ElDeep/
+*ElDeep/
