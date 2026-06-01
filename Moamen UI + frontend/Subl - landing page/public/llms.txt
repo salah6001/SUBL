@@ -1,0 +1,9 @@
+# Subl
+
+> AI-driven multimodal system for real-time stress and burnout detection in the workplace. Privacy-first, GDPR & HIPAA aligned.
+
+Subl silently analyzes behavioral signals (keystroke cadence, mouse smoothness, focus duration) to detect early signs of cognitive load and burnout — without cameras, microphones, or content capture. Individual scores stay private to the employee; HR only sees aggregated, anonymized team-level metrics.
+
+## Pages
+
+- [Home](/): Product overview, how it works, features, FAQ, and early access signup.
