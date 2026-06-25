@@ -1,0 +1,170 @@
+# Subl — full local stack.
+# Run from the repo root:  docker compose up -d --build
+# See README.md for ports and first-run details.
+services:
+  # ── .NET Web API (core backend) ────────────────────────────────────────────
+  web-api:
+    image: ${DOCKER_REGISTRY-}subl-web-api
+    container_name: web-api
+    build:
+      context: ./api
+      dockerfile: src/Web.Api/Dockerfile
+    ports:
+      - 5000:8080
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+      - ASPNETCORE_URLS=http://+:8080
+      - ConnectionStrings__Database=Host=postgres;Port=5432;Database=clean-architecture;Username=postgres;Password=postgres
+      - Serilog__WriteTo__1__Args__ServerUrl=http://seq:80
+      - Email__SmtpHost=mailpit
+      - StressDetection__BaseUrl=http://ml-service:8000
+      # Set SLACK_WEBHOOK_URL in your shell/.env to enable Slack delivery.
+      - Slack__WebhookUrl=${SLACK_WEBHOOK_URL-}
+    restart: on-failure
+    depends_on:
+      postgres:
+        condition: service_healthy
+      mailpit:
+        condition: service_started
+      seq:
+        condition: service_started
+      ml-service:
+        condition: service_healthy
+
+  # ── Python ML service (keystroke dynamics → stress score) ──────────────────
+  ml-service:
+    image: subl-ml-service
+    container_name: ml-service
+    build:
+      context: ./ml-service
+      dockerfile: Dockerfile
+    ports:
+      - 8000:8000
+    volumes:
+      - ./ml-service/data:/app/data
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "python3", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/health')"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 15s
+
+  # ── Chatbot (wellbeing assistant) ──────────────────────────────────────────
+  chatbot:
+    image: subl-chatbot
+    container_name: chatbot
+    build:
+      context: ./chatbot
+      dockerfile: Dockerfile
+    env_file:
+      - ./chatbot/.env
+    ports:
+      - 5005:5000
+    restart: unless-stopped
+
+  # ── Admin dashboard (React, served by nginx) ───────────────────────────────
+  frontend-admin:
+    image: subl-frontend-admin
+    container_name: frontend-admin
+    build:
+      context: ./frontend/admin-dashboard
+      dockerfile: Dockerfile
+      args:
+        - VITE_API_URL=http://localhost:5000
+    ports:
+      - 3001:80
+    restart: unless-stopped
+    depends_on:
+      - web-api
+
+  # ── User dashboard (React, served by nginx) ────────────────────────────────
+  frontend-user:
+    image: subl-frontend-user
+    container_name: frontend-user
+    build:
+      context: ./frontend/user-dashboard
+      dockerfile: Dockerfile
+      args:
+        - VITE_API_URL=http://localhost:5000
+        - VITE_API_WS_URL=ws://localhost:5000
+        - VITE_CHAT_URL=http://localhost:5005
+    ports:
+      - 3002:80
+    restart: unless-stopped
+    depends_on:
+      - web-api
+      - chatbot
+
+  # ── Desktop monitoring agent (captures keystroke dynamics) ─────────────────
+  desktop-agent:
+    image: subl-desktop-agent
+    container_name: desktop-agent
+    build:
+      context: ./desktop-agent
+      dockerfile: Dockerfile
+    # Pass host keyboard/input devices into the container so pynput can use the
+    # Linux evdev backend (no X11 display needed).
+    devices:
+      - /dev/input:/dev/input
+      - /dev/console:/dev/console
+    group_add:
+      - "995"   # host 'input' group GID — grants read access to /dev/input/event*
+    environment:
+      - SUBL_EMAIL=user@company.com
+      - SUBL_PASSWORD=User@123!
+      - SUBL_BATCH_INTERVAL=30
+      - SUBL_API_URL=http://web-api:8080
+      # Stable identity so the agent reuses one device row instead of minting a
+      # new one on every container restart.
+      - SUBL_DEVICE_FINGERPRINT=subl-desktop-agent-docker
+      - SUBL_DEVICE_NAME=Subl Desktop Agent
+      - PYNPUT_BACKEND_KEYBOARD=uinput
+      - PYNPUT_BACKEND_MOUSE=dummy
+    volumes:
+      - desktop-agent-data:/root/.subl_agent
+    restart: unless-stopped
+    depends_on:
+      web-api:
+        condition: service_started
+
+  # ── Infrastructure ─────────────────────────────────────────────────────────
+  postgres:
+    image: postgres:17
+    container_name: postgres
+    environment:
+      - POSTGRES_DB=clean-architecture
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    ports:
+      - 5433:5432
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d clean-architecture"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+      start_period: 10s
+
+  mailpit:
+    image: axllent/mailpit:latest
+    container_name: mailpit
+    ports:
+      - 1025:1025
+      - 8025:8025
+    environment:
+      - MP_SMTP_AUTH_ACCEPT_ANY=true
+      - MP_SMTP_AUTH_ALLOW_INSECURE=true
+
+  seq:
+    image: datalust/seq:2024.3
+    container_name: seq
+    environment:
+      - ACCEPT_EULA=Y
+    ports:
+      - 8081:80
+
+volumes:
+  desktop-agent-data:
+  postgres-data:
