@@ -33,7 +33,12 @@ public enum NotificationChannel
     Sms = 8,
 
     /// <summary>
+    /// Slack notification (posted to a team webhook).
+    /// </summary>
+    Slack = 16,
+
+    /// <summary>
     /// All channels.
     /// </summary>
-    All = InApp | Email | Push | Sms
+    All = InApp | Email | Push | Sms | Slack
 }

@@ -21,11 +21,17 @@ class HttpApiClient(ApiGateway):
         token_store: TokenStore,
         webhook_url: Optional[str] = None,
         webhook_secret: Optional[str] = None,
+        email: Optional[str] = None,
+        password: Optional[str] = None,
     ) -> None:
         self._base_url = base_url.rstrip("/")
         self._webhook_url = (webhook_url or "").rstrip("/")
         self._webhook_secret = webhook_secret or ""
         self._token_store = token_store
+        # Credentials let the agent re-login on its own when the refresh token
+        # has also lapsed, so a long-running headless agent never goes idle.
+        self._email = email or ""
+        self._password = password or ""
         self._access_token: Optional[str] = None
         self._refresh_token: Optional[str] = None
         self._load_tokens()
@@ -70,7 +76,7 @@ class HttpApiClient(ApiGateway):
             method, url, headers=headers, json=json_body, params=params, timeout=15
         )
 
-        if response.status_code == 401 and self._refresh_token and self._refresh():
+        if response.status_code == 401 and self._reauth():
             headers["Authorization"] = f"Bearer {self._access_token}"
             response = requests.request(
                 method, url, headers=headers, json=json_body, params=params, timeout=15
@@ -88,10 +94,23 @@ class HttpApiClient(ApiGateway):
             return None
         return response.json()
 
+    def _reauth(self) -> bool:
+        """Recover authentication: try the refresh token first, then fall back
+        to a full re-login with stored credentials (headless long-running case)."""
+        if self._refresh_token and self._refresh():
+            return True
+        if self._email and self._password:
+            try:
+                self.login(self._email, self._password)
+                return True
+            except ApiError:
+                return False
+        return False
+
     def _refresh(self) -> bool:
         try:
             response = requests.post(
-                f"{self._base_url}/users/refresh-token",
+                f"{self._base_url}/users/refresh",
                 json={"refreshToken": self._refresh_token},
                 timeout=10,
             )
@@ -150,6 +169,10 @@ class HttpApiClient(ApiGateway):
         )
         return result["id"]
 
+    def ping_device(self, device_id: str) -> None:
+        """Heartbeat so the backend keeps the device 'online' between sessions."""
+        self._request("POST", f"/devices/{device_id}/ping")
+
     # ------------------------------------------------------------------
     # Sessions
     # ------------------------------------------------------------------
@@ -195,7 +218,7 @@ class HttpApiClient(ApiGateway):
     # ------------------------------------------------------------------
 
     def submit_metrics(self, session_id: str, features: dict) -> Reading:
-        if self._webhook_url:
+        if self._webhook_url and self._webhook_secret:
             return self._submit_metrics_webhook(session_id, features)
 
         payload = self._request(
@@ -209,6 +232,8 @@ class HttpApiClient(ApiGateway):
             score=float(payload.get("score", 0.0)),
             level=str(payload.get("level", "-")),
             confidence=float(payload.get("confidence", 0.0)),
+            emotion=str(payload.get("emotion") or ""),
+            emotion_label=str(payload.get("emotionLabel") or ""),
         )
 
     def _submit_metrics_webhook(self, session_id: str, features: dict) -> Reading:
@@ -244,6 +269,8 @@ class HttpApiClient(ApiGateway):
             score=float(payload.get("score", 0.0)),
             level=str(payload.get("level", "-")),
             confidence=float(payload.get("confidence", 0.0)),
+            emotion=str(payload.get("emotion") or ""),
+            emotion_label=str(payload.get("emotionLabel") or ""),
         )
 
     def _sign_webhook(self, timestamp: str, body: str) -> str:

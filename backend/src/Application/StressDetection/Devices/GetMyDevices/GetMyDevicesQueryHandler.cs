@@ -35,6 +35,7 @@ internal sealed class GetMyDevicesQueryHandler(
                 d.AgentVersion,
                 d.IsActive,
                 d.LastSeenAt,
+                d.LastIpAddress,
                 d.CreatedAt,
                 d.RevokedAt))
             .ToList();

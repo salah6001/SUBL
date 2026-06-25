@@ -10,4 +10,5 @@ public sealed record StressReadingCreatedDomainEvent(
     Guid SessionId,
     Guid UserId,
     StressLevel Level,
-    double Score) : IDomainEvent;
+    double Score,
+    double Confidence = 0) : IDomainEvent;

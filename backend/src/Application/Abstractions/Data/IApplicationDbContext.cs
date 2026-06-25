@@ -1,9 +1,15 @@
-﻿using Domain.Accounts;
+using Domain.Accounts;
+using Domain.Alerts;
+using Domain.Articles;
 using Domain.AuditLogs;
+using Domain.DeviceSettings;
+using Domain.Habits;
 using Domain.Notifications;
 using Domain.Permissions;
+using Domain.Privacy;
 using Domain.StressDetection;
 using Domain.Subscriptions;
+using Domain.Surveys;
 using Domain.Users;
 using Microsoft.EntityFrameworkCore;
 
@@ -50,6 +56,26 @@ public interface IApplicationDbContext
     DbSet<KeyboardMetrics> KeyboardMetrics { get; }
     DbSet<StressReading> StressReadings { get; }
 
+    // Habits
+    DbSet<Habit> Habits { get; }
+    DbSet<HabitCompletion> HabitCompletions { get; }
+
+    // Articles
+    DbSet<Article> Articles { get; }
+
+    // Privacy
+    DbSet<UserPrivacySettings> UserPrivacySettings { get; }
+
+    // Device Settings
+    DbSet<UserDeviceSettings> UserDeviceSettings { get; }
+
+    // Surveys
+    DbSet<SurveyQuestion> SurveyQuestions { get; }
+    DbSet<SurveyResponse> SurveyResponses { get; }
+    DbSet<SurveyAnswer> SurveyAnswers { get; }
+
+    // Alerts
+    DbSet<StressAlert> StressAlerts { get; }
+
     Task<int> SaveChangesAsync(CancellationToken cancellationToken = default);
 }
-

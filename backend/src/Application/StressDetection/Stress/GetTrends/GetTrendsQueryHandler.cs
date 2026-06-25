@@ -15,7 +15,22 @@ internal sealed class GetTrendsQueryHandler(
         GetTrendsQuery request,
         CancellationToken cancellationToken)
     {
-        Guid userId = currentUserService.UserId;
+        Guid currentUserId = currentUserService.UserId;
+
+        // Resolve whose trends to return. Viewing another user's trends is an
+        // admin/analytics action; restrict it to super admins.
+        Guid userId = currentUserId;
+        if (request.UserId is { } requestedUserId && requestedUserId != currentUserId)
+        {
+            if (!currentUserService.IsSuperAdmin)
+            {
+                return Result.Failure<List<StressTrendPoint>>(Error.Forbidden(
+                    "Stress.Trends.Forbidden",
+                    "You are not allowed to view another user's stress trends."));
+            }
+
+            userId = requestedUserId;
+        }
 
         TimeSpan bucket = request.Granularity.ToUpperInvariant() switch
         {

@@ -1,6 +1,7 @@
 ﻿using Application.Abstractions.Data;
 using Application.Abstractions.Identity;
 using Application.Abstractions.Messaging;
+using Domain.Common;
 using Domain.Users;
 using Microsoft.EntityFrameworkCore;
 using SharedKernel;
@@ -46,6 +47,19 @@ internal sealed class RegisterUserCommandHandler(
 
             return Result.Failure<Guid>(identityResult.Error);
         }
+
+        // Create the user's profile so the dashboard, settings and admin views
+        // always have a real (non-mock) row to read/update. Department starts
+        // Unassigned — an administrator assigns it later (departments are
+        // user-centric). The phone number from sign-up is stored here.
+        var profile = UserProfile.Create(user.Id, Department.Unassigned);
+        if (!string.IsNullOrWhiteSpace(command.PhoneNumber))
+        {
+            profile.UpdateContactInfo(command.PhoneNumber);
+        }
+
+        context.UserProfiles.Add(profile);
+        await context.SaveChangesAsync(cancellationToken);
 
         return user.Id;
     }

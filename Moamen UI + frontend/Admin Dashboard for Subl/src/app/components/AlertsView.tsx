@@ -1,9 +1,42 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import {
   AlertTriangle, AlertCircle, CheckCircle2, Clock, Filter, Search,
   ChevronDown, Building2, User, Shield, Zap, Activity,
 } from "lucide-react";
-import { MOCK_ALERTS, type Alert, type AlertSeverity, type AlertStatus, type AlertCategory } from "../data/mockData";
+import { type Alert, type AlertSeverity, type AlertStatus, type AlertCategory } from "../data/mockData";
+import { fetchAlerts, acknowledgeAlert, resolveAlert, type AdminAlert } from "../lib/admin/alertsApi";
+import { ApiError } from "../lib/apiClient";
+
+// ── Backend → UI mapping ──────────────────────────────────────────────────────
+const SEVERITY_MAP: Record<string, AlertSeverity> = {
+  Critical: "critical", High: "high", Medium: "medium", Low: "low",
+};
+const STATUS_MAP: Record<string, AlertStatus> = {
+  Open: "Active", Acknowledged: "Acknowledged", Resolved: "Resolved",
+};
+const CATEGORY_MAP: Record<string, AlertCategory> = {
+  HighStress: "Stress", CriticalStress: "Stress", SustainedStress: "Burnout", Anomaly: "Anomaly",
+};
+
+function humanizeDept(text: string): string {
+  return text.replace(/([a-z])([A-Z])/g, "$1 $2");
+}
+
+function toUiAlert(a: AdminAlert): Alert & { backendStatus: string } {
+  return {
+    id: a.id,
+    title: a.title,
+    message: a.message ?? "",
+    severity: SEVERITY_MAP[a.severity] ?? "low",
+    status: STATUS_MAP[a.status] ?? "Active",
+    category: CATEGORY_MAP[a.category] ?? "Stress",
+    department: humanizeDept(a.department),
+    userName: undefined,
+    timestamp: a.createdAt,
+    resolvedAt: a.resolvedAt ?? undefined,
+    backendStatus: a.status,
+  };
+}
 
 const SEV_CONFIG: Record<AlertSeverity, { label: string; dot: string; badge: string; text: string }> = {
   critical: { label: "Critical", dot: "bg-red-500", badge: "bg-red-100 dark:bg-red-900/40", text: "text-red-700 dark:text-red-400" },
@@ -35,9 +68,29 @@ function formatTs(ts: string): string {
   return ts.replace("T", " ").substring(0, 16);
 }
 
-function AlertDetailModal({ alert, onClose }: { alert: Alert; onClose: () => void }) {
+function AlertDetailModal({
+  alert,
+  onClose,
+  onAcknowledge,
+  onResolve,
+}: {
+  alert: Alert;
+  onClose: () => void;
+  onAcknowledge: (id: string) => Promise<void>;
+  onResolve: (id: string) => Promise<void>;
+}) {
   const sev = SEV_CONFIG[alert.severity];
   const status = STATUS_CONFIG[alert.status];
+  const [busy, setBusy] = useState(false);
+
+  async function run(action: (id: string) => Promise<void>) {
+    setBusy(true);
+    try {
+      await action(alert.id);
+    } finally {
+      setBusy(false);
+    }
+  }
   return (
     <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
       <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={onClose} />
@@ -97,10 +150,30 @@ function AlertDetailModal({ alert, onClose }: { alert: Alert; onClose: () => voi
             )}
           </div>
         </div>
-        <div className="px-6 pb-5">
+        <div className="px-6 pb-5 flex gap-2">
+          {alert.status === "Active" && (
+            <button
+              onClick={() => run(onAcknowledge)}
+              disabled={busy}
+              className="flex-1 py-2.5 rounded-xl bg-amber-500 text-white hover:bg-amber-600 transition-colors disabled:opacity-60"
+              style={{ fontSize: "0.875rem", fontWeight: 600 }}
+            >
+              Acknowledge
+            </button>
+          )}
+          {alert.status !== "Resolved" && (
+            <button
+              onClick={() => run(onResolve)}
+              disabled={busy}
+              className="flex-1 py-2.5 rounded-xl bg-green-600 text-white hover:bg-green-700 transition-colors disabled:opacity-60"
+              style={{ fontSize: "0.875rem", fontWeight: 600 }}
+            >
+              Resolve
+            </button>
+          )}
           <button
             onClick={onClose}
-            className="w-full py-2.5 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors"
+            className="flex-1 py-2.5 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors"
             style={{ fontSize: "0.875rem", fontWeight: 500 }}
           >
             Close
@@ -112,6 +185,9 @@ function AlertDetailModal({ alert, onClose }: { alert: Alert; onClose: () => voi
 }
 
 export function AlertsView() {
+  const [alerts, setAlerts] = useState<Alert[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [search, setSearch] = useState("");
   const [severityFilter, setSeverityFilter] = useState<AlertSeverity | "All">("All");
   const [statusFilter, setStatusFilter] = useState<AlertStatus | "All">("All");
@@ -119,8 +195,33 @@ export function AlertsView() {
   const [page, setPage] = useState(1);
   const [selectedAlert, setSelectedAlert] = useState<Alert | null>(null);
 
+  useEffect(() => {
+    let cancelled = false;
+    fetchAlerts({ limit: 200 })
+      .then(data => { if (!cancelled) setAlerts(data.map(toUiAlert)); })
+      .catch(err => { if (!cancelled) setError(err instanceof ApiError ? err.displayMessage : "Couldn't load alerts."); })
+      .finally(() => { if (!cancelled) setLoading(false); });
+    return () => { cancelled = true; };
+  }, []);
+
+  // Updates one alert's status locally after an acknowledge/resolve.
+  function applyStatus(id: string, status: AlertStatus) {
+    setAlerts(prev => prev.map(a => a.id === id ? { ...a, status } : a));
+    setSelectedAlert(prev => prev && prev.id === id ? { ...prev, status } : prev);
+  }
+
+  async function onAcknowledge(id: string) {
+    await acknowledgeAlert(id);
+    applyStatus(id, "Acknowledged");
+  }
+
+  async function onResolve(id: string) {
+    await resolveAlert(id);
+    applyStatus(id, "Resolved");
+  }
+
   const filtered = useMemo(() => {
-    let list = MOCK_ALERTS;
+    let list = alerts;
     if (search) {
       const q = search.toLowerCase();
       list = list.filter(a =>
@@ -139,7 +240,7 @@ export function AlertsView() {
       return b.timestamp.localeCompare(a.timestamp);
     });
     return list;
-  }, [search, severityFilter, statusFilter, categoryFilter]);
+  }, [alerts, search, severityFilter, statusFilter, categoryFilter]);
 
   const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
   const paginated = filtered.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
@@ -149,11 +250,27 @@ export function AlertsView() {
   }
 
   const stats = useMemo(() => ({
-    active:    MOCK_ALERTS.filter(a => a.status === "Active").length,
-    critical:  MOCK_ALERTS.filter(a => a.severity === "critical").length,
-    acked:     MOCK_ALERTS.filter(a => a.status === "Acknowledged").length,
-    resolved:  MOCK_ALERTS.filter(a => a.status === "Resolved").length,
-  }), []);
+    active:    alerts.filter(a => a.status === "Active").length,
+    critical:  alerts.filter(a => a.severity === "critical").length,
+    acked:     alerts.filter(a => a.status === "Acknowledged").length,
+    resolved:  alerts.filter(a => a.status === "Resolved").length,
+  }), [alerts]);
+
+  if (loading) {
+    return (
+      <div className="py-24 flex justify-center">
+        <span className="w-8 h-8 border-2 border-blue-200 border-t-blue-600 rounded-full animate-spin" />
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-100 dark:border-slate-800 shadow-sm p-12 text-center">
+        <p className="text-red-500" style={{ fontSize: "0.9rem" }}>{error}</p>
+      </div>
+    );
+  }
 
   return (
     <div>
@@ -164,7 +281,7 @@ export function AlertsView() {
           <h2 className="text-slate-800 dark:text-slate-100" style={{ fontSize: "1.2rem", fontWeight: 700 }}>Alerts &amp; Warnings</h2>
         </div>
         <p className="text-slate-500 dark:text-slate-400 ml-3.5" style={{ fontSize: "0.82rem" }}>
-          All system alerts and early warnings · {MOCK_ALERTS.length} total across all departments
+          All system alerts and early warnings · {alerts.length} total across all departments
         </p>
       </div>
 
@@ -235,7 +352,7 @@ export function AlertsView() {
           </div>
         </div>
         <p className="text-slate-400 dark:text-slate-500 mt-2.5" style={{ fontSize: "0.72rem" }}>
-          Showing {filtered.length} of {MOCK_ALERTS.length} alerts
+          Showing {filtered.length} of {alerts.length} alerts
         </p>
       </div>
 
@@ -375,7 +492,12 @@ export function AlertsView() {
       </div>
 
       {selectedAlert && (
-        <AlertDetailModal alert={selectedAlert} onClose={() => setSelectedAlert(null)} />
+        <AlertDetailModal
+          alert={selectedAlert}
+          onClose={() => setSelectedAlert(null)}
+          onAcknowledge={onAcknowledge}
+          onResolve={onResolve}
+        />
       )}
     </div>
   );

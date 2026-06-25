@@ -57,8 +57,72 @@ public sealed class DatabaseSeeder
         await SeedPlansAsync();
         await SeedAuditLogsAsync();
         await SeedNotificationTypesAsync();
+        await SeedArticlesAsync();
 
         _logger.LogInformation("Database seeding completed successfully!");
+    }
+
+    private async Task SeedArticlesAsync()
+    {
+        if (await _context.Articles.AnyAsync())
+        {
+            _logger.LogInformation("Articles already seeded, skipping...");
+            return;
+        }
+
+        _logger.LogInformation("Seeding wellness articles...");
+
+        var articles = new List<Domain.Articles.Article>
+        {
+            Domain.Articles.Article.Create(
+                "Box Breathing: A 5-Minute Reset for Acute Stress",
+                "Dr. Lena Hartmann", "Clinical Psychologist", "5 min read",
+                Domain.Articles.ArticleCategory.StressManagement,
+                "https://images.unsplash.com/photo-1506126613408-eca07ce68773?fit=max&fm=jpg&q=80&w=800",
+                "A simple, evidence-backed breathing pattern you can use at your desk to calm the nervous system in minutes.",
+                "Box breathing — also called square breathing — is a technique used by everyone from athletes to emergency responders to regain composure under pressure.\n\n**How to do it**\n- Inhale through your nose for 4 seconds.\n- Hold your breath for 4 seconds.\n- Exhale slowly through your mouth for 4 seconds.\n- Hold empty for 4 seconds.\n- Repeat for 5 cycles.\n\n**Why it works**\nDeliberate, slow breathing activates the parasympathetic nervous system, lowering heart rate and blood pressure. Extending the exhale signals safety to the brain, reducing the fight-or-flight response that drives acute stress.\n\nTry it the next time you notice your typing speeding up or your shoulders tensing — those are early physical markers of rising stress.",
+                isPublished: true),
+
+            Domain.Articles.Article.Create(
+                "How Keystroke Dynamics Reveal Hidden Stress",
+                "James Park", "AI Research Lead", "7 min read",
+                Domain.Articles.ArticleCategory.Technology,
+                "https://images.unsplash.com/photo-1697577418970-95d99b5a55cf?fit=max&fm=jpg&q=80&w=800",
+                "The rhythm of how you type carries a surprisingly accurate signal of cognitive load and emotional state.",
+                "Every person has a typing signature: the time between keystrokes, how long keys are held, how often the backspace is used. Researchers call these *keystroke dynamics*.\n\n**The science**\nUnder stress, fine motor control changes subtly. Inter-key intervals become more variable, error and correction rates climb, and typing rhythm loses its usual smoothness. These shifts often appear before a person consciously registers feeling stressed — which is why we call it *hidden stress*.\n\n**Privacy by design**\nSubl analyzes *timing patterns*, not the content of what you type. No words, passwords, or messages are ever recorded — only anonymized rhythm features that feed the stress model.\n\nThe goal isn't surveillance; it's giving you an early, private signal so you can act before stress compounds.",
+                isPublished: true),
+
+            Domain.Articles.Article.Create(
+                "The 20-20-20 Rule and Why Micro-Breaks Matter",
+                "Sofia Alvarez", "Workplace Wellbeing Coach", "4 min read",
+                Domain.Articles.ArticleCategory.Productivity,
+                "https://images.unsplash.com/photo-1483389127117-b6a2102724ae?fit=max&fm=jpg&q=80&w=800",
+                "Short, frequent breaks beat long, rare ones for sustaining focus and reducing strain.",
+                "Knowledge work rewards long stretches of concentration — but the brain and body pay a price for unbroken screen time.\n\n**The 20-20-20 rule**\nEvery 20 minutes, look at something 20 feet away for 20 seconds. It relaxes the eye muscles and interrupts the postural lock that builds tension in the neck and shoulders.\n\n**Stack a micro-break on top**\n- Stand up and roll your shoulders.\n- Take three slow breaths.\n- Unclench your jaw and hands.\n\nResearch on 'microbreaks' consistently shows they reduce fatigue and maintain performance across the day, with no net loss in productivity. The key is frequency: many tiny pauses outperform one long one.",
+                isPublished: true),
+
+            Domain.Articles.Article.Create(
+                "Eat for a Steadier Mood: Nutrition and Stress",
+                "Dr. Omar Farouk", "Nutrition Scientist", "6 min read",
+                Domain.Articles.ArticleCategory.Nutrition,
+                "https://images.unsplash.com/photo-1490645935967-10de6ba17061?fit=max&fm=jpg&q=80&w=800",
+                "What and when you eat shapes how resilient you are to daily stressors.",
+                "Stress and nutrition form a feedback loop: stress changes how we eat, and what we eat changes how we handle stress.\n\n**Stabilize blood sugar**\nLarge swings in blood glucose amplify irritability and anxiety. Favor slow-release carbohydrates (oats, legumes, whole grains) paired with protein to flatten the curve.\n\n**Hydration first**\nEven mild dehydration raises cortisol and degrades concentration. Keep water within reach and sip regularly.\n\n**Helpful nutrients**\n- Magnesium (leafy greens, nuts) supports nervous-system regulation.\n- Omega-3s (oily fish, walnuts) are linked to lower inflammatory stress responses.\n\nYou don't need a perfect diet — small, consistent choices compound into steadier energy and mood.",
+                isPublished: true),
+
+            Domain.Articles.Article.Create(
+                "Protect Your Sleep to Protect Your Stress Baseline",
+                "Dr. Mei Tanaka", "Sleep Researcher", "6 min read",
+                Domain.Articles.ArticleCategory.Recovery,
+                "https://images.unsplash.com/photo-1455642305367-68834a1da7ab?fit=max&fm=jpg&q=80&w=800",
+                "Sleep is the foundation of stress resilience — here's how to defend it.",
+                "When sleep suffers, the brain's emotional alarm system (the amygdala) becomes more reactive and the prefrontal cortex less able to regulate it. The result: the same stressors hit harder.\n\n**A simple wind-down protocol**\n- Dim lights and stop screens 60 minutes before bed.\n- Keep the room cool (around 18–20°C / 65–68°F).\n- Keep a consistent sleep and wake time, even on weekends.\n\n**If your mind races**\nWrite tomorrow's worries down on paper. Externalizing open loops reduces the cognitive arousal that keeps you awake.\n\nAim for 7–9 hours. Consistency matters more than any single perfect night — a stable sleep schedule keeps your stress baseline low and your recovery high.",
+                isPublished: true),
+        };
+
+        _context.Articles.AddRange(articles);
+        await _context.SaveChangesAsync(default);
+        _logger.LogInformation("Seeded {Count} articles.", articles.Count);
     }
 
     private async Task SeedPermissionsAsync()
@@ -338,8 +402,15 @@ public sealed class DatabaseSeeder
             // Stress Detection Notifications
             NotificationType.Create("stress.high_detected", "High Stress Detected", NotificationCategory.StressAnalysis,
                 "⚠️ High Stress Detected", "Your keyboard patterns indicate elevated stress levels. Consider taking a break.",
-                NotificationPriority.Urgent, NotificationChannel.InApp | NotificationChannel.Push,
+                NotificationPriority.Urgent, NotificationChannel.InApp | NotificationChannel.Email | NotificationChannel.Push | NotificationChannel.Slack,
                 iconName: "alert-triangle", colorHex: "#e74c3c"),
+
+            // Fired on the first stress reading of a monitoring session — a handy
+            // way to verify every channel (in-app/email/push/slack) is delivering.
+            NotificationType.Create("session.started", "Monitoring Session Started", NotificationCategory.StressAnalysis,
+                "🟢 Monitoring started", "Subl is now analysing your typing for this session. We'll alert you if your stress rises.",
+                NotificationPriority.Normal, NotificationChannel.InApp | NotificationChannel.Email | NotificationChannel.Push | NotificationChannel.Slack,
+                iconName: "play-circle", colorHex: "#2563eb"),
 
             NotificationType.Create("stress.moderate_detected", "Moderate Stress Detected", NotificationCategory.StressAnalysis,
                 "Moderate Stress Detected", "Your typing patterns suggest moderate stress. Try a short breathing exercise.",
@@ -387,6 +458,13 @@ public sealed class DatabaseSeeder
                 "Mentioned by {MentionedBy}", "{MentionedBy} mentioned you in {Context}.",
                 NotificationPriority.High, NotificationChannel.InApp,
                 iconName: "at-sign", colorHex: "#3498db"),
+
+            // Test notification — used by POST /api/notifications/test to verify
+            // delivery across in-app + email channels.
+            NotificationType.Create("system.test", "Test Notification", NotificationCategory.System,
+                "🔔 Test Notification", "{Message}",
+                NotificationPriority.High, NotificationChannel.InApp | NotificationChannel.Email | NotificationChannel.Push | NotificationChannel.Slack,
+                iconName: "bell", colorHex: "#2563eb", isSystemType: true),
         };
 
         _context.NotificationTypes.AddRange(notificationTypes);

@@ -1,0 +1,64 @@
+model:
+  name: "MindType AI Emotion Classifier"
+  version: "1.0.0"
+  path: "model/mindtype_model.pkl"
+  artifact_files:
+    - "model/mindtype_model.pkl"
+    - "model/encoder.pkl"
+    - "model/metadata.json"
+    - "model/stress_model.pkl"
+    - "model/stress_metadata.json"
+  experimental_model_path: "model/stress_model.pkl"
+  algorithm: "RandomForestClassifier"
+  pipeline: "StandardScaler + RandomForestClassifier"
+  hyperparameters:
+    n_estimators: 200
+    class_weight: balanced
+    random_state: 42
+  feature_names:
+    - mean_dwell
+    - median_flight
+    - cv_flight
+    - mean_del_freq
+    - mean_tot_time
+  classes:
+    - A
+    - C
+    - H
+    - N
+    - S
+  stress_classes:
+    - A
+    - S
+  input_shape: [5]
+  output_fields:
+    - session_id
+    - emotion
+    - emotion_label
+    - emotion_emoji
+    - emotion_probs
+    - stress_score
+    - stress_level
+    - recommendations
+
+api:
+  base_url: "http://localhost:8000"
+  swagger_url: "http://localhost:8000/docs"
+  cors:
+    allow_origins: ["*"]
+    allow_methods: ["*"]
+    allow_headers: ["*"]
+  health_endpoint: "/health"
+  endpoints:
+    - "/predict"
+    - "/predict/extended"
+    - "/survey"
+    - "/analyze"
+    - "/history"
+    - "/ws/stream"
+
+deployment:
+  requirements: "requirements.txt"
+  python_version: "3.11"
+  container: false
+  notes: "Use Dockerfile if containerization is added."

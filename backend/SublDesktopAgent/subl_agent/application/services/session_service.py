@@ -46,6 +46,9 @@ class SessionService:
         self._stop_event = threading.Event()
         self._sender: Optional[threading.Thread] = None
         self._is_paused = False
+        # When True, a server-side 404/409 (expired session) triggers an
+        # automatic new-session start instead of stopping the agent.
+        self._auto_restart = True
 
     # ------------------------------------------------------------------
     # Public state
@@ -172,9 +175,22 @@ class SessionService:
         )
         self._sender.start()
 
+    def _heartbeat(self) -> None:
+        """Tell the backend the agent is alive, even with no keystrokes/while
+        paused, so the device stays 'online' and claimable."""
+        if not self._device_id:
+            return
+        try:
+            self._api.ping_device(self._device_id)
+        except Exception:  # noqa: BLE001
+            log.debug("Heartbeat ping failed", exc_info=True)
+
     def _sender_loop(self) -> None:
         log.info("Metrics sender started (interval=%ss)", self._batch_interval_seconds)
         while not self._stop_event.wait(self._batch_interval_seconds):
+            # Heartbeat regardless of typing or pause state so liveness reflects
+            # the running agent process, not just session activity.
+            self._heartbeat()
             if self._is_paused:
                 continue
             try:
@@ -205,12 +221,22 @@ class SessionService:
         except ApiError as ex:
             if ex.status in (404, 409):
                 log.warning("Session no longer accepts metrics: %s", ex)
-                self._stop_event.set()
-                if self._on_session_ended:
+                # Self-heal: the server-side session expired/ended (abandoned
+                # after inactivity, or re-claimed by another user). Start a fresh
+                # session and keep monitoring. The keyboard monitor is already
+                # running, so we only re-acquire a session id. If the restart
+                # itself fails, keep the loop alive and retry on the next tick
+                # instead of permanently stopping the agent.
+                if self._auto_restart and self._device_id and not self._stop_event.is_set():
                     try:
-                        self._on_session_ended()
-                    except Exception:  # noqa: BLE001
-                        log.exception("on_session_ended callback raised")
+                        new_id = self._api.start_session(
+                            self._device_id, "auto-restart after session expiry")
+                        self._session_id = new_id
+                        self._is_paused = False
+                        log.info("Auto-restarted stress session: %s", new_id)
+                    except ApiError as restart_ex:
+                        log.warning("Auto-restart failed; will retry next tick: %s", restart_ex)
+                return  # drop this window; next tick uses the new/retried session
             raise
 
         if self._on_reading:

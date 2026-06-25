@@ -19,6 +19,9 @@ class ApiGateway(Protocol):
     def register_device(self, profile: DeviceProfile) -> str:
         ...
 
+    def ping_device(self, device_id: str) -> None:
+        ...
+
     def start_session(self, device_id: str, notes: Optional[str]) -> str:
         ...
 

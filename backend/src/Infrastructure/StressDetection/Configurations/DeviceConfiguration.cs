@@ -15,6 +15,15 @@ internal sealed class DeviceConfiguration : IEntityTypeConfiguration<Device>
         builder.Property(d => d.UserId)
             .IsRequired();
 
+        // Nullable: set when a user claims this device's data stream.
+        builder.Property(d => d.ClaimedByUserId);
+
+        builder.HasIndex(d => d.ClaimedByUserId);
+
+        // Computed read-only properties — not columns.
+        builder.Ignore(d => d.OwnerId);
+        builder.Ignore(d => d.IsOnline);
+
         builder.HasOne(d => d.User)
             .WithMany()
             .HasForeignKey(d => d.UserId)

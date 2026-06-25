@@ -46,6 +46,12 @@ public sealed class StressReading : Entity
     public string ModelVersion { get; private set; } = string.Empty;
 
     /// <summary>
+    /// Dominant emotion code from the ML model ("A"=Angry, "C"=Calm, "H"=Happy, "N"=Neutral, "S"=Sad).
+    /// Null when the ML service did not return emotion data.
+    /// </summary>
+    public string? Emotion { get; private set; }
+
+    /// <summary>
     /// Optional JSON metadata returned by the ML service (top features, etc.).
     /// </summary>
     public string? Metadata { get; private set; }
@@ -70,7 +76,8 @@ public sealed class StressReading : Entity
         double score,
         double confidence,
         string modelVersion,
-        string? metadata = null)
+        string? metadata = null,
+        string? emotion = null)
     {
         // Clamp score into [0,1] in case the ML service returns something noisy
         score = Math.Clamp(score, 0.0, 1.0);
@@ -87,6 +94,7 @@ public sealed class StressReading : Entity
             Confidence = confidence,
             ModelVersion = modelVersion,
             Metadata = metadata,
+            Emotion = emotion,
             CreatedAt = DateTime.UtcNow
         };
 
@@ -95,7 +103,8 @@ public sealed class StressReading : Entity
             sessionId,
             userId,
             reading.Level,
-            score));
+            score,
+            confidence));
 
         if (reading.Level >= StressLevel.High)
         {

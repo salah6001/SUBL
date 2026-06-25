@@ -111,8 +111,10 @@ internal sealed class PermissionAuthorizationHandler : AuthorizationHandler<Perm
         // Check multiple possible formats for role claim
         return user.IsInRole("Super Admin") ||
                user.IsInRole("SuperAdmin") ||
+               user.IsInRole("Administrator") ||
                user.HasClaim(ClaimTypes.Role, "Super Admin") ||
-               user.HasClaim(ClaimTypes.Role, "SuperAdmin");
+               user.HasClaim(ClaimTypes.Role, "SuperAdmin") ||
+               user.HasClaim(ClaimTypes.Role, "Administrator");
     }
 
     /// <summary>

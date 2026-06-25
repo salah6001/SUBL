@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   LineChart,
   Line,
@@ -13,7 +13,13 @@ import {
   Cell,
   ReferenceLine,
 } from "recharts";
-import { TrendingUp, TrendingDown, Minus, Download, RefreshCw, Info } from "lucide-react";
+import { TrendingUp, TrendingDown, Minus, Download, RefreshCw, Info, AlertCircle } from "lucide-react";
+import {
+  fetchDepartmentStress,
+  fetchStressDistribution,
+  type DepartmentStressSlice,
+} from "../lib/admin/analyticsApi";
+import { fetchKpis, type AdminKpis } from "../lib/admin/kpisApi";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -32,9 +38,9 @@ interface DeptPoint {
   prev: number;
 }
 
-// ─── Dataset definitions ──────────────────────────────────────────────────────
+// ─── Illustrative trend dataset (kept as-is — not backed by a single API call) ──
 
-const DATA: Record<TimeRange, DataPoint[]> = {
+const ILLUSTRATIVE_DATA: Record<TimeRange, DataPoint[]> = {
   "7d": [
     { label: "Mon", stress: 44, wellness: 78, burnout: 8 },
     { label: "Tue", stress: 42, wellness: 80, burnout: 7 },
@@ -70,21 +76,16 @@ const DATA: Record<TimeRange, DataPoint[]> = {
   ],
 };
 
-const DEPT_DATA: DeptPoint[] = [
-  { dept: "Marketing", stress: 27, prev: 32 },
-  { dept: "Sales", stress: 48, prev: 50 },
-  { dept: "Engineering", stress: 68, prev: 62 },
-  { dept: "HR", stress: 19, prev: 22 },
-  { dept: "Support", stress: 74, prev: 70 },
-  { dept: "Product", stress: 26, prev: 30 },
-  { dept: "Finance", stress: 43, prev: 45 },
-  { dept: "Legal", stress: 14, prev: 18 },
-];
-
 const TIME_LABELS: Record<TimeRange, string> = {
   "7d": "Last 7 Days",
   "1m": "This Month",
   "3m": "This Quarter",
+};
+
+const RANGE_DAYS: Record<TimeRange, number> = {
+  "7d": 7,
+  "1m": 30,
+  "3m": 90,
 };
 
 // ─── Helper functions ─────────────────────────────────────────────────────────
@@ -103,7 +104,7 @@ function computeTrend(data: DataPoint[], key: keyof DataPoint): { val: number; d
   return { val: Math.abs(diff), dir: diff > 0 ? "up" : diff < 0 ? "down" : "flat" };
 }
 
-// ─── Custom tooltip ───────────────────────────────────────────────────────────
+// ─── Custom tooltips ──────────────────────────────────────────────────────────
 
 interface CustomTooltipProps {
   active?: boolean;
@@ -147,15 +148,22 @@ function DeptTooltip({ active, payload, label }: CustomTooltipProps) {
 
 // ─── Stat card ────────────────────────────────────────────────────────────────
 
-function StatCard({ label, value, unit, trend, color }: {
-  label: string; value: number; unit?: string; trend: { val: number; dir: "up" | "down" | "flat" }; color: string;
+function StatCard({ label, value, unit, trend, color, live }: {
+  label: string; value: number; unit?: string; trend: { val: number; dir: "up" | "down" | "flat" }; color: string; live?: boolean;
 }) {
   const isGoodDown = label.toLowerCase().includes("stress") || label.toLowerCase().includes("burnout");
   const isPositive = (trend.dir === "down" && isGoodDown) || (trend.dir === "up" && !isGoodDown);
 
   return (
     <div className="bg-white rounded-2xl p-5 border border-slate-100 shadow-sm">
-      <p className="text-slate-500 mb-2" style={{ fontSize: "0.78rem" }}>{label}</p>
+      <div className="flex items-center gap-1.5 mb-2">
+        <p className="text-slate-500" style={{ fontSize: "0.78rem" }}>{label}</p>
+        {live && (
+          <span className="px-1.5 py-0.5 rounded-full bg-blue-50 text-blue-600 border border-blue-100" style={{ fontSize: "0.58rem", fontWeight: 700, letterSpacing: "0.04em" }}>
+            LIVE
+          </span>
+        )}
+      </div>
       <p style={{ fontSize: "1.6rem", fontWeight: 700, color }}>{value}{unit ?? "%"}</p>
       <div className={`flex items-center gap-1 mt-1 ${isPositive ? "text-green-500" : trend.dir === "flat" ? "text-slate-400" : "text-red-500"}`}
         style={{ fontSize: "0.75rem", fontWeight: 500 }}>
@@ -166,24 +174,82 @@ function StatCard({ label, value, unit, trend, color }: {
   );
 }
 
+function StatCardSkeleton() {
+  return (
+    <div className="bg-white rounded-2xl p-5 border border-slate-100 shadow-sm animate-pulse">
+      <div className="h-3 bg-slate-100 rounded w-2/3 mb-3" />
+      <div className="h-8 bg-slate-100 rounded w-1/2 mb-2" />
+      <div className="h-3 bg-slate-100 rounded w-3/4" />
+    </div>
+  );
+}
+
 // ─── Main view ────────────────────────────────────────────────────────────────
 
 export function AnalyticsView() {
   const [range, setRange] = useState<TimeRange>("1m");
-  const [loading, setLoading] = useState(false);
+  const [lineLoading, setLineLoading] = useState(false);
   const [activeLines, setActiveLines] = useState({ stress: true, wellness: true, burnout: true });
 
-  const data = DATA[range];
-  const latest = data[data.length - 1];
+  // Live KPIs
+  const [kpis, setKpis] = useState<AdminKpis | null>(null);
+  const [kpisLoading, setKpisLoading] = useState(true);
+  const [kpisError, setKpisError] = useState(false);
+
+  // Live dept chart
+  const [deptData, setDeptData] = useState<DeptPoint[]>([]);
+  const [deptLoading, setDeptLoading] = useState(true);
+  const [deptError, setDeptError] = useState(false);
+
+  const data = ILLUSTRATIVE_DATA[range];
+
+  // Fetch KPIs on mount
+  useEffect(() => {
+    let cancelled = false;
+    setKpisLoading(true);
+    setKpisError(false);
+    fetchKpis()
+      .then(k => { if (!cancelled) setKpis(k); })
+      .catch(() => { if (!cancelled) setKpisError(true); })
+      .finally(() => { if (!cancelled) setKpisLoading(false); });
+    return () => { cancelled = true; };
+  }, []);
+
+  // Fetch dept stress whenever range changes
+  useEffect(() => {
+    let cancelled = false;
+    setDeptLoading(true);
+    setDeptError(false);
+    const days = RANGE_DAYS[range];
+    fetchDepartmentStress(days)
+      .then(res => {
+        if (cancelled) return;
+        // Convert 0..1 score to 0..100 percentage for chart display
+        const mapped: DeptPoint[] = res.departments.map((d: DepartmentStressSlice) => ({
+          dept: d.department,
+          stress: Math.round(d.averageStressScore * 100),
+          prev: Math.round(d.peakStressScore * 100), // use peak as the "prev" comparison bar
+        }));
+        setDeptData(mapped);
+      })
+      .catch(() => { if (!cancelled) setDeptError(true); })
+      .finally(() => { if (!cancelled) setDeptLoading(false); });
+    return () => { cancelled = true; };
+  }, [range]);
 
   function switchRange(r: TimeRange) {
-    setLoading(true);
-    setTimeout(() => { setRange(r); setLoading(false); }, 400);
+    setLineLoading(true);
+    setTimeout(() => { setRange(r); setLineLoading(false); }, 400);
   }
 
   function toggleLine(key: keyof typeof activeLines) {
     setActiveLines(prev => ({ ...prev, [key]: !prev[key] }));
   }
+
+  // Derive stat card values from live KPIs or fall back to illustrative data
+  const stressIndexVal = kpis ? Math.round(kpis.overallStressPercent) : data[data.length - 1].stress;
+  const wellnessVal = kpis ? Math.round(kpis.wellnessScore) : data[data.length - 1].wellness;
+  const burnoutVal = data[data.length - 1].burnout;
 
   return (
     <div>
@@ -206,11 +272,47 @@ export function AnalyticsView() {
         </button>
       </div>
 
+      {/* Live data banner */}
+      <div className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-blue-50 border border-blue-100 mb-5">
+        <Info size={13} className="text-blue-500 flex-shrink-0" />
+        <p className="text-blue-700" style={{ fontSize: "0.75rem" }}>
+          <strong>Dept chart and stats show live data</strong> · Trend line is illustrative (multi-period aggregation not yet wired to a single backend call)
+        </p>
+      </div>
+
       {/* Summary stats */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-7">
-        <StatCard label="Current Stress Index" value={latest.stress} trend={computeTrend(data, "stress")} color="#f97316" />
-        <StatCard label="Wellness Score" value={latest.wellness} trend={computeTrend(data, "wellness")} color="#22c55e" />
-        <StatCard label="Burnout Risk Index" value={latest.burnout} trend={computeTrend(data, "burnout")} color="#ef4444" />
+        {kpisLoading ? (
+          <>
+            <StatCardSkeleton />
+            <StatCardSkeleton />
+          </>
+        ) : kpisError ? (
+          <>
+            <div className="bg-white rounded-2xl p-5 border border-red-100 shadow-sm col-span-2 flex items-center gap-2">
+              <AlertCircle size={14} className="text-red-400 flex-shrink-0" />
+              <p className="text-red-500" style={{ fontSize: "0.78rem" }}>Could not load live KPIs</p>
+            </div>
+          </>
+        ) : (
+          <>
+            <StatCard
+              label="Current Stress Index"
+              value={stressIndexVal}
+              trend={computeTrend(data, "stress")}
+              color="#f97316"
+              live
+            />
+            <StatCard
+              label="Wellness Score"
+              value={wellnessVal}
+              trend={computeTrend(data, "wellness")}
+              color="#22c55e"
+              live
+            />
+          </>
+        )}
+        <StatCard label="Burnout Risk Index" value={burnoutVal} trend={computeTrend(data, "burnout")} color="#ef4444" />
         <div className="bg-white rounded-2xl p-5 border border-slate-100 shadow-sm">
           <p className="text-slate-500 mb-2" style={{ fontSize: "0.78rem" }}>Period</p>
           <p className="text-slate-800" style={{ fontSize: "1rem", fontWeight: 700 }}>{TIME_LABELS[range]}</p>
@@ -218,13 +320,13 @@ export function AnalyticsView() {
         </div>
       </div>
 
-      {/* Main line chart */}
+      {/* Main line chart — illustrative */}
       <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-6 mb-6">
         {/* Chart toolbar */}
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-5">
           <div>
             <h3 className="text-slate-800" style={{ fontSize: "0.95rem", fontWeight: 700 }}>Company Stress Trends Over Time</h3>
-            <p className="text-slate-400 mt-0.5" style={{ fontSize: "0.75rem" }}>Aggregated multivariate wellness indicators · 3 signals tracked</p>
+            <p className="text-slate-400 mt-0.5" style={{ fontSize: "0.75rem" }}>Aggregated multivariate wellness indicators · 3 signals tracked · <em>Illustrative data</em></p>
           </div>
 
           <div className="flex items-center gap-2 flex-wrap">
@@ -251,7 +353,7 @@ export function AnalyticsView() {
               onClick={() => switchRange(range)}
               className="p-2 rounded-xl border border-slate-200 text-slate-500 hover:bg-slate-50 hover:text-blue-600 transition-colors"
             >
-              <RefreshCw size={14} className={loading ? "animate-spin" : ""} />
+              <RefreshCw size={14} className={lineLoading ? "animate-spin" : ""} />
             </button>
           </div>
         </div>
@@ -280,7 +382,7 @@ export function AnalyticsView() {
         </div>
 
         {/* Chart */}
-        <div className={`transition-opacity duration-300 ${loading ? "opacity-40" : "opacity-100"}`}>
+        <div className={`transition-opacity duration-300 ${lineLoading ? "opacity-40" : "opacity-100"}`}>
           <ResponsiveContainer width="100%" height={300}>
             <LineChart data={data} margin={{ top: 4, right: 16, left: -8, bottom: 0 }}>
               <defs>
@@ -323,36 +425,59 @@ export function AnalyticsView() {
         </div>
       </div>
 
-      {/* Department comparison bar chart */}
+      {/* Department comparison bar chart — [Live data] */}
       <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-6 mb-6">
         <div className="flex items-start justify-between mb-5">
           <div>
-            <h3 className="text-slate-800" style={{ fontSize: "0.95rem", fontWeight: 700 }}>Department Stress Comparison</h3>
-            <p className="text-slate-400 mt-0.5" style={{ fontSize: "0.75rem" }}>Current period vs. previous period · Team-aggregated data</p>
+            <div className="flex items-center gap-2">
+              <h3 className="text-slate-800" style={{ fontSize: "0.95rem", fontWeight: 700 }}>Department Stress Comparison</h3>
+              <span className="px-1.5 py-0.5 rounded-full bg-blue-50 text-blue-600 border border-blue-100" style={{ fontSize: "0.58rem", fontWeight: 700, letterSpacing: "0.04em" }}>
+                LIVE DATA
+              </span>
+            </div>
+            <p className="text-slate-400 mt-0.5" style={{ fontSize: "0.75rem" }}>
+              Average vs. peak stress per department · {TIME_LABELS[range]} · Real-time from backend
+            </p>
           </div>
           <div className="flex items-center gap-3">
             <span className="flex items-center gap-1.5" style={{ fontSize: "0.72rem" }}>
-              <span className="w-3 h-1 rounded inline-block bg-blue-500" /> Current
+              <span className="w-3 h-1 rounded inline-block bg-blue-500" /> Avg Stress
             </span>
             <span className="flex items-center gap-1.5" style={{ fontSize: "0.72rem" }}>
-              <span className="w-3 h-1 rounded inline-block bg-slate-300" /> Previous
+              <span className="w-3 h-1 rounded inline-block bg-slate-300" /> Peak
             </span>
           </div>
         </div>
-        <ResponsiveContainer width="100%" height={240}>
-          <BarChart data={DEPT_DATA} barGap={4} margin={{ top: 4, right: 8, left: -10, bottom: 0 }}>
-            <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" vertical={false} />
-            <XAxis dataKey="dept" tick={{ fontSize: 11, fill: "#94a3b8" }} axisLine={false} tickLine={false} />
-            <YAxis tick={{ fontSize: 11, fill: "#94a3b8" }} axisLine={false} tickLine={false} domain={[0, 100]} tickFormatter={v => `${v}%`} />
-            <Tooltip content={<DeptTooltip />} cursor={{ fill: "rgba(148,163,184,0.06)" }} />
-            <Bar dataKey="prev" name="prev" fill="#e2e8f0" radius={[4, 4, 0, 0]} barSize={16} />
-            <Bar dataKey="stress" name="stress" radius={[4, 4, 0, 0]} barSize={16}>
-              {DEPT_DATA.map((entry) => (
-                <Cell key={entry.dept} fill={getDeptBarColor(entry.stress)} />
-              ))}
-            </Bar>
-          </BarChart>
-        </ResponsiveContainer>
+
+        {deptLoading ? (
+          <div className="h-60 flex items-center justify-center">
+            <span className="w-6 h-6 border-2 border-blue-200 border-t-blue-600 rounded-full animate-spin" />
+          </div>
+        ) : deptError ? (
+          <div className="h-60 flex items-center justify-center gap-2 text-red-400">
+            <AlertCircle size={15} />
+            <span style={{ fontSize: "0.82rem" }}>Could not load department data</span>
+          </div>
+        ) : deptData.length === 0 ? (
+          <div className="h-60 flex items-center justify-center text-slate-400" style={{ fontSize: "0.82rem" }}>
+            No department data available for this period.
+          </div>
+        ) : (
+          <ResponsiveContainer width="100%" height={240}>
+            <BarChart data={deptData} barGap={4} margin={{ top: 4, right: 8, left: -10, bottom: 0 }}>
+              <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" vertical={false} />
+              <XAxis dataKey="dept" tick={{ fontSize: 11, fill: "#94a3b8" }} axisLine={false} tickLine={false} />
+              <YAxis tick={{ fontSize: 11, fill: "#94a3b8" }} axisLine={false} tickLine={false} domain={[0, 100]} tickFormatter={v => `${v}%`} />
+              <Tooltip content={<DeptTooltip />} cursor={{ fill: "rgba(148,163,184,0.06)" }} />
+              <Bar dataKey="prev" name="prev" fill="#e2e8f0" radius={[4, 4, 0, 0]} barSize={16} />
+              <Bar dataKey="stress" name="stress" radius={[4, 4, 0, 0]} barSize={16}>
+                {deptData.map((entry) => (
+                  <Cell key={entry.dept} fill={getDeptBarColor(entry.stress)} />
+                ))}
+              </Bar>
+            </BarChart>
+          </ResponsiveContainer>
+        )}
       </div>
 
       {/* Insights panel */}

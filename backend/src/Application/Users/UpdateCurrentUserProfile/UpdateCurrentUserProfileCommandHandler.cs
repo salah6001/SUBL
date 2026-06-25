@@ -1,6 +1,7 @@
 using Application.Abstractions.Data;
 using Application.Abstractions.Identity;
 using Application.Abstractions.Messaging;
+using Domain.Common;
 using Domain.Users;
 using Microsoft.EntityFrameworkCore;
 using SharedKernel;
@@ -29,13 +30,20 @@ internal sealed class UpdateCurrentUserProfileCommandHandler : ICommandHandler<U
         UserProfile? profile = await _context.UserProfiles
             .FirstOrDefaultAsync(p => p.UserId == _currentUser.UserId, cancellationToken);
 
+        // Upsert: older accounts (and any created before profiles were seeded at
+        // registration) may not have a profile row yet. Create one on first save
+        // so the user can always edit their own profile.
         if (profile is null)
         {
-            return Result.Failure(UserErrors.ProfileNotFound(_currentUser.UserId));
+            profile = UserProfile.Create(_currentUser.UserId, Department.Unassigned);
+            _context.UserProfiles.Add(profile);
         }
 
         // Update contact info
         profile.UpdateContactInfo(command.PhoneNumber);
+
+        // Update the client-facing job title (keep the internal title as-is).
+        profile.UpdateJobTitles(command.DisplayJobTitle, profile.InternalJobTitle);
 
         // Update profile
         Uri? avatarUri = !string.IsNullOrWhiteSpace(command.AvatarUrl) 

@@ -3,7 +3,6 @@ import { KPICards } from "./KPICards";
 import { DepartmentBenchmarkChart } from "./DepartmentBenchmarkChart";
 import { StressDistributionChart } from "./StressDistributionChart";
 import { AlertsTable } from "./AlertsTable";
-import { LiveActivityFeed } from "./LiveActivityFeed";
 
 interface DashboardViewProps {
   onNavigateAlerts: () => void;
@@ -57,14 +56,7 @@ export function DashboardView({ onNavigateAlerts }: DashboardViewProps) {
             View All Warnings
           </button>
         </div>
-        <div className="grid grid-cols-1 xl:grid-cols-3 gap-5">
-          <div className="xl:col-span-2">
-            <AlertsTable />
-          </div>
-          <div className="xl:col-span-1">
-            <LiveActivityFeed />
-          </div>
-        </div>
+        <AlertsTable />
       </section>
 
       {/* Footer */}

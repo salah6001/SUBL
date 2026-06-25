@@ -12,7 +12,7 @@ namespace Web.Api.Endpoints.Users;
 /// </summary>
 internal sealed class UpdateCurrentUser : IEndpoint
 {
-    public sealed record Request(string FirstName, string LastName);
+    public sealed record Request(string FirstName, string LastName, string? Email);
 
     public void MapEndpoint(IEndpointRouteBuilder app)
     {
@@ -23,7 +23,8 @@ internal sealed class UpdateCurrentUser : IEndpoint
         {
             var command = new UpdateCurrentUserCommand(
                 request.FirstName,
-                request.LastName);
+                request.LastName,
+                request.Email);
 
             Result result = await handler.Handle(command, cancellationToken);
 

@@ -55,6 +55,7 @@ public sealed record StressPredictionResult(
     double Score,
     double Confidence,
     string ModelVersion,
+    string? Emotion = null,
     string? Label = null,
     string? ErrorMessage = null,
     string? RawJsonMetadata = null);

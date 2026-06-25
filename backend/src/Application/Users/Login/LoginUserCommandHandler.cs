@@ -32,6 +32,20 @@ internal sealed class LoginUserCommandHandler(
 
         if (user is not null)
         {
+            // Block login for suspended/inactive accounts. Identity only tracks
+            // its own IsActive flag, so the domain status (set by the admin
+            // Suspend/Deactivate actions) must be enforced here too — otherwise a
+            // suspended user could still sign back in after their tokens were revoked.
+            if (user.Status == UserStatus.Suspended)
+            {
+                return Result.Failure<TokenResponse>(UserErrors.UserSuspended);
+            }
+
+            if (user.Status == UserStatus.Inactive)
+            {
+                return Result.Failure<TokenResponse>(UserErrors.UserInactive);
+            }
+
             user.RecordLogin(command.IpAddress, command.UserAgent);
             await context.SaveChangesAsync(cancellationToken);
         }

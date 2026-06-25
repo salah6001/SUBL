@@ -17,11 +17,13 @@ internal sealed class TestNotification : IEndpoint
         {
             Guid userId = currentUserService.UserId;
 
+            // Let the channels come from the type's defaults (in-app + email)
+            // intersected with the user's own preferences, so this also verifies
+            // real email delivery rather than only the in-app toast.
             await notificationService.Create("system.test")
                 .ToUser(userId)
                 .WithData(new { Message = "This is a test notification" })
                 .WithPriority(Domain.Notifications.NotificationPriority.High)
-                .WithChannels(Domain.Notifications.NotificationChannel.InApp)
                 .SendAsync(cancellationToken);
 
             return Results.Ok(new { message = "Test notification sent" });

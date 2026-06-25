@@ -115,4 +115,65 @@ internal sealed class StressReadingRepository(ApplicationDbContext context) : IS
                 ReadingsCount: g.Count()))
             .ToList();
     }
+
+    public async Task<List<StressLevelCount>> GetLevelDistributionAsync(
+        Guid userId,
+        DateTime from,
+        DateTime to,
+        CancellationToken cancellationToken = default)
+    {
+        List<StressLevelCount> counts = await context.StressReadings
+            .AsNoTracking()
+            .Where(r => r.UserId == userId &&
+                        r.CreatedAt >= from &&
+                        r.CreatedAt <= to)
+            .GroupBy(r => r.Level)
+            .Select(g => new StressLevelCount(g.Key, g.Count()))
+            .ToListAsync(cancellationToken);
+
+        return counts;
+    }
+
+    public async Task<Dictionary<string, int>> GetEmotionCountsAsync(
+        Guid userId,
+        DateTime from,
+        DateTime to,
+        CancellationToken cancellationToken = default)
+    {
+        return await context.StressReadings
+            .AsNoTracking()
+            .Where(r => r.UserId == userId &&
+                        r.CreatedAt >= from &&
+                        r.CreatedAt <= to &&
+                        r.Emotion != null)
+            .GroupBy(r => r.Emotion!)
+            .Select(g => new { Code = g.Key, Count = g.Count() })
+            .ToDictionaryAsync(x => x.Code, x => x.Count, cancellationToken);
+    }
+
+    public async Task<StressAggregates> GetAggregatesAsync(
+        Guid userId,
+        DateTime from,
+        DateTime to,
+        CancellationToken cancellationToken = default)
+    {
+        var readings = await context.StressReadings
+            .AsNoTracking()
+            .Where(r => r.UserId == userId &&
+                        r.CreatedAt >= from &&
+                        r.CreatedAt <= to)
+            .Select(r => new { r.Score, r.SessionId })
+            .ToListAsync(cancellationToken);
+
+        if (readings.Count == 0)
+        {
+            return new StressAggregates(0, 0, 0, 0);
+        }
+
+        int totalSessions = readings.Select(r => r.SessionId).Distinct().Count();
+        double avg = readings.Average(r => r.Score);
+        double peak = readings.Max(r => r.Score);
+
+        return new StressAggregates(readings.Count, totalSessions, avg, peak);
+    }
 }

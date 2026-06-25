@@ -153,6 +153,6 @@ internal static class ClaimsPrincipalExtensions
             return false;
         }
 
-        return principal.IsInRole("Super Admin") || principal.IsInRole("SuperAdmin");
+        return principal.IsInRole("Super Admin") || principal.IsInRole("SuperAdmin") || principal.IsInRole("Administrator");
     }
 }

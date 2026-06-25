@@ -1,12 +1,182 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
-  Settings, Shield, Bell, Save, Moon, Sun, Monitor, Info,
+  Settings, Bell, Save, Moon, Sun, Monitor, User, Lock, Eye, EyeOff, Building2,
 } from "lucide-react";
 import type { ToastType } from "./shared/Toast";
+import type { Preferences } from "../lib/preferencesApi";
+import { useI18n } from "../lib/i18n";
+import { api, ApiError } from "../lib/apiClient";
+import { updateCompany } from "../lib/admin/companyApi";
+import { getNotificationPrefs, updateNotificationPrefs } from "../lib/notificationsApi";
 
-type SettingsTab = "General" | "Security" | "Notifications";
+function splitName(name: string): { firstName: string; lastName: string } {
+  const parts = name.trim().split(/\s+/);
+  const firstName = parts.shift() ?? "";
+  const lastName = parts.join(" ") || firstName;
+  return { firstName, lastName };
+}
 
-interface Props { showToast: (msg: string, type?: ToastType) => void; }
+interface Props {
+  showToast: (msg: string, type?: ToastType) => void;
+  adminUser?: { name: string; email: string };
+  onUpdateAdmin?: (name: string, email: string) => void;
+  preferences: Preferences;
+  onUpdatePreferences: (p: Preferences) => void;
+  company?: string;
+  onCompanyChange?: (name: string) => void;
+}
+
+function CompanySettings({ company, onCompanyChange, showToast }: { company: string; onCompanyChange: (n: string) => void; showToast: (m: string, t?: ToastType) => void }) {
+  const [name, setName] = useState(company);
+  const [saving, setSaving] = useState(false);
+  useEffect(() => { setName(company); }, [company]);
+
+  async function save() {
+    const trimmed = name.trim();
+    if (!trimmed) { showToast("Company name can't be empty", "error"); return; }
+    setSaving(true);
+    try {
+      const updated = await updateCompany(trimmed);
+      onCompanyChange(updated.name);
+      showToast("Company name updated", "success");
+    } catch (err) {
+      showToast(err instanceof ApiError ? err.displayMessage : "Couldn't update company", "error");
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  return (
+    <SectionCard title="Company">
+      <SettingRow label="Company Name" description="Shown as the banner at the top of the admin and user dashboards.">
+        <input className={INPUT_CLS} value={name} onChange={e => setName(e.target.value)} style={{ fontSize: "0.875rem", width: "220px" }} />
+      </SettingRow>
+      <div className="flex justify-end py-4">
+        <button onClick={save} disabled={saving} className="flex items-center gap-2 px-6 py-2.5 bg-blue-600 text-white rounded-xl hover:bg-blue-700 disabled:opacity-60 transition-colors shadow-sm" style={{ fontSize: "0.875rem", fontWeight: 600 }}>
+          <Save size={15} /> {saving ? "Saving…" : "Save Company"}
+        </button>
+      </div>
+    </SectionCard>
+  );
+}
+
+const INPUT_CLS = "w-full px-4 py-2.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-slate-700 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-200 dark:focus:ring-blue-900 focus:border-blue-400 dark:focus:border-blue-600 transition-all";
+
+/** Highlights the settings section currently scrolled into view. */
+function useScrollSpy(ids: string[]) {
+  const [active, setActive] = useState(ids[0]);
+  useEffect(() => {
+    const observer = new IntersectionObserver(
+      (entries) => {
+        const visible = entries
+          .filter(e => e.isIntersecting)
+          .sort((a, b) => a.boundingClientRect.top - b.boundingClientRect.top);
+        if (visible[0]) setActive(visible[0].target.id);
+      },
+      { rootMargin: "-20% 0px -70% 0px", threshold: 0 },
+    );
+    ids.forEach(id => { const el = document.getElementById(id); if (el) observer.observe(el); });
+    return () => observer.disconnect();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [ids.join(",")]);
+  return active;
+}
+
+function ProfileSettings({
+  adminUser, onUpdateAdmin, showToast,
+}: { adminUser: { name: string; email: string }; onUpdateAdmin: (n: string, e: string) => void; showToast: (m: string, t?: ToastType) => void }) {
+  const [name, setName] = useState(adminUser.name);
+  const [saving, setSaving] = useState(false);
+  const initials = name.split(" ").map(p => p[0]).join("").slice(0, 2).toUpperCase();
+
+  // Password change
+  const [currentPassword, setCurrentPassword] = useState("");
+  const [newPassword, setNewPassword] = useState("");
+  const [showPw, setShowPw] = useState(false);
+  const [changingPw, setChangingPw] = useState(false);
+
+  useEffect(() => { setName(adminUser.name); }, [adminUser.name]);
+
+  async function saveProfile() {
+    const { firstName, lastName } = splitName(name);
+    if (!firstName) { showToast("Name can't be empty", "error"); return; }
+    setSaving(true);
+    try {
+      await api.put<void>("users/me", { firstName, lastName });
+      onUpdateAdmin(name, adminUser.email);
+      showToast("Profile saved", "success");
+    } catch (err) {
+      showToast(err instanceof ApiError ? err.displayMessage : "Couldn't save profile", "error");
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  async function changePassword() {
+    if (!currentPassword || !newPassword) { showToast("Enter both current and new password", "error"); return; }
+    setChangingPw(true);
+    try {
+      await api.post<void>("users/change-password", { currentPassword, newPassword });
+      setCurrentPassword(""); setNewPassword("");
+      showToast("Password changed", "success");
+    } catch (err) {
+      showToast(err instanceof ApiError ? err.displayMessage : "Couldn't change password", "error");
+    } finally {
+      setChangingPw(false);
+    }
+  }
+
+  return (
+    <SectionCard title="Admin Profile">
+      <div className="py-5 flex items-center gap-4 border-b border-slate-100 dark:border-slate-800">
+        <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-blue-500 to-blue-700 flex items-center justify-center shadow-lg shrink-0">
+          <span className="text-white" style={{ fontSize: "1.1rem", fontWeight: 700 }}>{initials || "A"}</span>
+        </div>
+        <div>
+          <p className="text-slate-800 dark:text-slate-100" style={{ fontSize: "0.95rem", fontWeight: 700 }}>{name || "Admin"}</p>
+          <p className="text-slate-400 dark:text-slate-500" style={{ fontSize: "0.8rem" }}>Super Admin</p>
+        </div>
+      </div>
+      <SettingRow label="Display Name" description="Shown across the admin console.">
+        <input className={INPUT_CLS} value={name} onChange={e => setName(e.target.value)} style={{ fontSize: "0.875rem", width: "220px" }} />
+      </SettingRow>
+      <SettingRow label="Email Address" description="Your sign-in email.">
+        <input className={`${INPUT_CLS} opacity-60 cursor-not-allowed`} type="email" value={adminUser.email} disabled style={{ fontSize: "0.875rem", width: "220px" }} />
+      </SettingRow>
+      <SettingRow label="Role" description="Your access level.">
+        <input className={`${INPUT_CLS} opacity-60 cursor-not-allowed`} value="Super Admin" disabled style={{ fontSize: "0.875rem", width: "220px" }} />
+      </SettingRow>
+      <div className="flex justify-end py-4">
+        <button onClick={saveProfile} disabled={saving} className="flex items-center gap-2 px-6 py-2.5 bg-blue-600 text-white rounded-xl hover:bg-blue-700 disabled:opacity-60 transition-colors shadow-sm" style={{ fontSize: "0.875rem", fontWeight: 600 }}>
+          <Save size={15} /> {saving ? "Saving…" : "Save Profile"}
+        </button>
+      </div>
+
+      <div className="border-t border-slate-100 dark:border-slate-800 pt-2">
+        <SettingRow label="Current Password" description="Change your sign-in password.">
+          <div className="relative" style={{ width: "220px" }}>
+            <Lock size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+            <input className={`${INPUT_CLS} pl-9`} type={showPw ? "text" : "password"} value={currentPassword} onChange={e => setCurrentPassword(e.target.value)} placeholder="Current password" style={{ fontSize: "0.875rem" }} />
+          </div>
+        </SettingRow>
+        <SettingRow label="New Password" description="At least 8 characters.">
+          <div className="relative" style={{ width: "220px" }}>
+            <Lock size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+            <input className={`${INPUT_CLS} pl-9 pr-9`} type={showPw ? "text" : "password"} value={newPassword} onChange={e => setNewPassword(e.target.value)} placeholder="New password" style={{ fontSize: "0.875rem" }} />
+            <button type="button" onClick={() => setShowPw(v => !v)} className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600">
+              {showPw ? <EyeOff size={14} /> : <Eye size={14} />}
+            </button>
+          </div>
+        </SettingRow>
+        <div className="flex justify-end py-4">
+          <button onClick={changePassword} disabled={changingPw} className="flex items-center gap-2 px-6 py-2.5 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 rounded-xl hover:bg-slate-50 dark:hover:bg-slate-800 disabled:opacity-60 transition-colors" style={{ fontSize: "0.875rem", fontWeight: 600 }}>
+            <Lock size={15} /> {changingPw ? "Changing…" : "Change Password"}
+          </button>
+        </div>
+      </div>
+    </SectionCard>
+  );
+}
 
 function Toggle({ value, onChange, disabled = false }: { value: boolean; onChange: (v: boolean) => void; disabled?: boolean }) {
   return (
@@ -45,44 +215,35 @@ function SectionCard({ title, children }: { title: string; children: React.React
   );
 }
 
-function GeneralSettings({ showToast }: Props) {
-  const [company, setCompany] = useState("Subl Technologies");
-  const [timezone, setTimezone] = useState("America/Los_Angeles");
-  const [language, setLanguage] = useState("en-US");
-  const [theme, setTheme] = useState<"light" | "dark" | "system">("system");
-  const [dateFormat, setDateFormat] = useState("MM/DD/YYYY");
-
+function GeneralSettings({ showToast, preferences, onUpdatePreferences }: Props) {
+  const { t: tr } = useI18n();
+  const set = (patch: Partial<Preferences>) => onUpdatePreferences({ ...preferences, ...patch });
   const inputCls = "w-full px-4 py-2.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-slate-700 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-200 dark:focus:ring-blue-900 focus:border-blue-400 dark:focus:border-blue-600 transition-all";
 
   return (
     <>
-      <SectionCard title="Organization">
-        <SettingRow label="Company Name" description="Displayed across the Subl admin console.">
-          <input className={inputCls} value={company} onChange={e => setCompany(e.target.value)} style={{ fontSize: "0.875rem", width: "220px" }} />
-        </SettingRow>
-        <SettingRow label="Timezone" description="Used for all timestamps and report scheduling.">
-          <select className={inputCls} value={timezone} onChange={e => setTimezone(e.target.value)} style={{ fontSize: "0.875rem", width: "220px", appearance: "none" }}>
+      <SectionCard title="Localization">
+        <SettingRow label={tr("settings.timezone")} description="Used when formatting timestamps across the console.">
+          <select className={inputCls} value={preferences.timezone} onChange={e => set({ timezone: e.target.value })} style={{ fontSize: "0.875rem", width: "220px", appearance: "none" }}>
             <option value="America/Los_Angeles">Pacific Time (PT)</option>
             <option value="America/Chicago">Central Time (CT)</option>
             <option value="America/New_York">Eastern Time (ET)</option>
             <option value="Europe/London">GMT / London</option>
             <option value="Europe/Berlin">Central European (CET)</option>
+            <option value="Africa/Cairo">Cairo (EET)</option>
+            <option value="Asia/Dubai">Gulf (GST)</option>
             <option value="Asia/Tokyo">Japan Standard (JST)</option>
             <option value="UTC">UTC</option>
           </select>
         </SettingRow>
-        <SettingRow label="Display Language">
-          <select className={inputCls} value={language} onChange={e => setLanguage(e.target.value)} style={{ fontSize: "0.875rem", width: "220px", appearance: "none" }}>
+        <SettingRow label={tr("settings.language")}>
+          <select className={inputCls} value={preferences.language} onChange={e => set({ language: e.target.value })} style={{ fontSize: "0.875rem", width: "220px", appearance: "none" }}>
             <option value="en-US">English (US)</option>
-            <option value="en-GB">English (UK)</option>
-            <option value="es-ES">Español</option>
-            <option value="fr-FR">Français</option>
-            <option value="de-DE">Deutsch</option>
-            <option value="ja-JP">日本語</option>
+            <option value="ar">العربية</option>
           </select>
         </SettingRow>
-        <SettingRow label="Date Format">
-          <select className={inputCls} value={dateFormat} onChange={e => setDateFormat(e.target.value)} style={{ fontSize: "0.875rem", width: "220px", appearance: "none" }}>
+        <SettingRow label={tr("settings.dateFormat")}>
+          <select className={inputCls} value={preferences.dateFormat} onChange={e => set({ dateFormat: e.target.value })} style={{ fontSize: "0.875rem", width: "220px", appearance: "none" }}>
             <option value="MM/DD/YYYY">MM/DD/YYYY</option>
             <option value="DD/MM/YYYY">DD/MM/YYYY</option>
             <option value="YYYY-MM-DD">YYYY-MM-DD (ISO)</option>
@@ -92,17 +253,17 @@ function GeneralSettings({ showToast }: Props) {
 
       <SectionCard title="Interface Theme">
         <div className="py-4">
-          <p className="text-slate-500 dark:text-slate-400 mb-4" style={{ fontSize: "0.82rem" }}>Choose the visual theme for the admin console.</p>
+          <p className="text-slate-500 dark:text-slate-400 mb-4" style={{ fontSize: "0.82rem" }}>Choose the visual theme for the admin console. Saved to your account.</p>
           <div className="grid grid-cols-3 gap-3">
             {([
-              { key: "light",  label: "Light",  icon: <Sun size={18} />,     preview: "bg-white border-slate-200" },
-              { key: "dark",   label: "Dark",   icon: <Moon size={18} />,    preview: "bg-slate-800 border-slate-700" },
-              { key: "system", label: "System", icon: <Monitor size={18} />, preview: "bg-gradient-to-r from-white to-slate-800 border-slate-300" },
+              { key: "light",  label: tr("settings.theme.light"),  icon: <Sun size={18} />,     preview: "bg-white border-slate-200" },
+              { key: "dark",   label: tr("settings.theme.dark"),   icon: <Moon size={18} />,    preview: "bg-slate-800 border-slate-700" },
+              { key: "system", label: tr("settings.theme.system"), icon: <Monitor size={18} />, preview: "bg-gradient-to-r from-white to-slate-800 border-slate-300" },
             ] as const).map(t => (
-              <button key={t.key} onClick={() => setTheme(t.key)}
-                className={`flex flex-col items-center gap-2 p-4 rounded-xl border-2 transition-all ${theme === t.key ? "border-blue-500 bg-blue-50 dark:bg-blue-900/20" : "border-slate-200 dark:border-slate-700 hover:border-slate-300 dark:hover:border-slate-600"}`}>
+              <button key={t.key} onClick={() => set({ theme: t.key })}
+                className={`flex flex-col items-center gap-2 p-4 rounded-xl border-2 transition-all ${preferences.theme === t.key ? "border-blue-500 bg-blue-50 dark:bg-blue-900/20" : "border-slate-200 dark:border-slate-700 hover:border-slate-300 dark:hover:border-slate-600"}`}>
                 <div className={`w-full h-10 rounded-lg border ${t.preview}`} />
-                <div className={`flex items-center gap-1.5 ${theme === t.key ? "text-blue-600 dark:text-blue-400" : "text-slate-600 dark:text-slate-400"}`} style={{ fontSize: "0.8rem", fontWeight: 600 }}>
+                <div className={`flex items-center gap-1.5 ${preferences.theme === t.key ? "text-blue-600 dark:text-blue-400" : "text-slate-600 dark:text-slate-400"}`} style={{ fontSize: "0.8rem", fontWeight: 600 }}>
                   {t.icon} {t.label}
                 </div>
               </button>
@@ -112,82 +273,8 @@ function GeneralSettings({ showToast }: Props) {
       </SectionCard>
 
       <div className="flex justify-end">
-        <button onClick={() => showToast("General settings saved successfully", "success")} className="flex items-center gap-2 px-6 py-2.5 bg-blue-600 text-white rounded-xl hover:bg-blue-700 transition-colors shadow-sm" style={{ fontSize: "0.875rem", fontWeight: 600 }}>
-          <Save size={15} /> Save General Settings
-        </button>
-      </div>
-    </>
-  );
-}
-
-function SecuritySettings({ showToast }: Props) {
-  const [twoFA, setTwoFA] = useState(true);
-  const [sso, setSSO] = useState(false);
-  const [sessionTimeout, setSessionTimeout] = useState("30");
-  const [passwordPolicy, setPasswordPolicy] = useState("Strong");
-  const [ipWhitelist, setIpWhitelist] = useState("192.168.0.0/16, 10.0.0.0/8");
-  const [auditRetention, setAuditRetention] = useState("365");
-  const [bruteForce, setBruteForce] = useState(true);
-  const [loginNotify, setLoginNotify] = useState(true);
-
-  const inputCls = "w-full px-4 py-2.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-slate-700 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-200 dark:focus:ring-blue-900 focus:border-blue-400 dark:focus:border-blue-600 transition-all";
-
-  return (
-    <>
-      <SectionCard title="Authentication">
-        <SettingRow label="Two-Factor Authentication (2FA)" description="Require 2FA for all admin accounts. Currently enforced company-wide.">
-          <Toggle value={twoFA} onChange={setTwoFA} />
-        </SettingRow>
-        <SettingRow label="Single Sign-On (SSO)" description="Enable SAML 2.0 / OIDC SSO integration for enterprise identity providers.">
-          <Toggle value={sso} onChange={setSSO} />
-        </SettingRow>
-        <SettingRow label="Session Timeout" description="Automatically log out inactive sessions after this period.">
-          <select className={inputCls} value={sessionTimeout} onChange={e => setSessionTimeout(e.target.value)} style={{ fontSize: "0.875rem", width: "160px", appearance: "none" }}>
-            <option value="15">15 minutes</option>
-            <option value="30">30 minutes</option>
-            <option value="60">1 hour</option>
-            <option value="240">4 hours</option>
-            <option value="0">Never</option>
-          </select>
-        </SettingRow>
-      </SectionCard>
-
-      <SectionCard title="Password & Access Policy">
-        <SettingRow label="Password Policy" description="Minimum complexity requirements for all user passwords.">
-          <select className={inputCls} value={passwordPolicy} onChange={e => setPasswordPolicy(e.target.value)} style={{ fontSize: "0.875rem", width: "160px", appearance: "none" }}>
-            <option value="Basic">Basic (8+ chars)</option>
-            <option value="Strong">Strong (12+, mixed)</option>
-            <option value="Enterprise">Enterprise (16+, MFA)</option>
-          </select>
-        </SettingRow>
-        <SettingRow label="Brute Force Protection" description="Lock accounts after 5 consecutive failed login attempts.">
-          <Toggle value={bruteForce} onChange={setBruteForce} />
-        </SettingRow>
-        <SettingRow label="Login Notifications" description="Send email alerts on new logins from unrecognized devices.">
-          <Toggle value={loginNotify} onChange={setLoginNotify} />
-        </SettingRow>
-      </SectionCard>
-
-      <SectionCard title="Network & Compliance">
-        <SettingRow label="IP Allowlist" description="Restrict admin access to these IP ranges (CIDR notation, comma-separated).">
-          <textarea value={ipWhitelist} onChange={e => setIpWhitelist(e.target.value)} rows={2}
-            className="px-4 py-2.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-slate-700 dark:text-slate-200 font-mono focus:outline-none focus:ring-2 focus:ring-blue-200 dark:focus:ring-blue-900 focus:border-blue-400 dark:focus:border-blue-600 transition-all resize-none"
-            style={{ fontSize: "0.78rem", width: "260px" }} />
-        </SettingRow>
-        <SettingRow label="Audit Log Retention" description="Number of days to retain audit log entries.">
-          <select className={inputCls} value={auditRetention} onChange={e => setAuditRetention(e.target.value)} style={{ fontSize: "0.875rem", width: "160px", appearance: "none" }}>
-            <option value="90">90 days</option>
-            <option value="180">180 days</option>
-            <option value="365">1 year</option>
-            <option value="730">2 years</option>
-            <option value="2555">7 years (compliance)</option>
-          </select>
-        </SettingRow>
-      </SectionCard>
-
-      <div className="flex justify-end">
-        <button onClick={() => showToast("Security settings saved", "success")} className="flex items-center gap-2 px-6 py-2.5 bg-blue-600 text-white rounded-xl hover:bg-blue-700 transition-colors shadow-sm" style={{ fontSize: "0.875rem", fontWeight: 600 }}>
-          <Save size={15} /> Save Security Settings
+        <button onClick={() => showToast("Preferences saved")} className="flex items-center gap-2 px-6 py-2.5 bg-blue-600 text-white rounded-xl hover:bg-blue-700 transition-colors shadow-sm" style={{ fontSize: "0.875rem", fontWeight: 600 }}>
+          <Save size={15} /> Done
         </button>
       </div>
     </>
@@ -195,82 +282,65 @@ function SecuritySettings({ showToast }: Props) {
 }
 
 function NotificationsSettings({ showToast }: Props) {
-  const [emailAlerts, setEmailAlerts] = useState(true);
-  const [slackAlerts, setSlackAlerts] = useState(false);
-  const [aiNudges, setAiNudges] = useState(true);
-  const [pushNotif, setPushNotif] = useState(true);
-  const [weeklyDigest, setWeeklyDigest] = useState(true);
-  const [criticalOnly, setCriticalOnly] = useState(false);
-  const [threshold, setThreshold] = useState("70");
-  const [slackWebhook, setSlackWebhook] = useState("");
+  const [prefs, setPrefs] = useState({ inAppEnabled: true, emailEnabled: true, pushEnabled: true });
+  const [loaded, setLoaded] = useState(false);
+
+  useEffect(() => {
+    getNotificationPrefs()
+      .then(p => setPrefs({ inAppEnabled: p.inAppEnabled, emailEnabled: p.emailEnabled, pushEnabled: p.pushEnabled }))
+      .catch(() => {})
+      .finally(() => setLoaded(true));
+  }, []);
+
+  // Each toggle persists immediately (partial update) — no fake "Save" button.
+  async function toggle(key: keyof typeof prefs, value: boolean) {
+    const prev = prefs;
+    setPrefs({ ...prefs, [key]: value });
+    try {
+      await updateNotificationPrefs({ [key]: value });
+    } catch (err) {
+      setPrefs(prev);
+      showToast(err instanceof ApiError ? err.displayMessage : "Couldn't save preference", "error");
+    }
+  }
 
   return (
     <>
       <SectionCard title="Alert Channels">
-        <SettingRow label="Email Alerts" description="Send stress alerts and critical events to admin email addresses.">
-          <Toggle value={emailAlerts} onChange={setEmailAlerts} />
+        <SettingRow label="In-App Alerts" description="Real-time alerts inside the console.">
+          <Toggle value={prefs.inAppEnabled} disabled={!loaded} onChange={v => toggle("inAppEnabled", v)} />
         </SettingRow>
-        <SettingRow label="Slack Notifications" description="Post alerts to a Slack channel via webhook.">
-          <div className="flex flex-col items-end gap-2">
-            <Toggle value={slackAlerts} onChange={setSlackAlerts} />
-            {slackAlerts && (
-              <input value={slackWebhook} onChange={e => setSlackWebhook(e.target.value)}
-                placeholder="https://hooks.slack.com/…"
-                className="px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-slate-600 dark:text-slate-300 placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-200 dark:focus:ring-blue-900 transition-all"
-                style={{ fontSize: "0.78rem", width: "240px" }} />
-            )}
-          </div>
+        <SettingRow label="Email Alerts" description="Send stress alerts and critical events to your email.">
+          <Toggle value={prefs.emailEnabled} disabled={!loaded} onChange={v => toggle("emailEnabled", v)} />
         </SettingRow>
         <SettingRow label="Push Notifications" description="Browser push notifications for real-time critical alerts.">
-          <Toggle value={pushNotif} onChange={setPushNotif} />
+          <Toggle value={prefs.pushEnabled} disabled={!loaded} onChange={v => toggle("pushEnabled", v)} />
+        </SettingRow>
+        <SettingRow label="Slack" description="Slack delivery is configured server-side (a team webhook). When set, stress &amp; session alerts post to your Slack channel automatically.">
+          <span className="px-2.5 py-1 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400" style={{ fontSize: "0.72rem", fontWeight: 600 }}>Server-managed</span>
         </SettingRow>
       </SectionCard>
-
-      <SectionCard title="AI & Wellness Interventions">
-        <SettingRow label="AI Nudge System" description="Automatically send micro-break and wellness nudges to employees above the stress threshold.">
-          <Toggle value={aiNudges} onChange={setAiNudges} />
-        </SettingRow>
-        <SettingRow label="Stress Alert Threshold" description="Trigger alerts when a team's average stress index exceeds this value.">
-          <div className="flex items-center gap-3">
-            <input type="range" min={40} max={90} value={parseInt(threshold)} onChange={e => setThreshold(e.target.value)} className="w-32 accent-blue-600" />
-            <span className="w-12 text-center px-2 py-1.5 bg-slate-100 dark:bg-slate-800 rounded-lg text-slate-700 dark:text-slate-200" style={{ fontSize: "0.82rem", fontWeight: 700 }}>{threshold}</span>
-          </div>
-        </SettingRow>
-        <SettingRow label="Critical Alerts Only" description="Only notify when stress reaches the 'Critical' threshold (>80). Silences moderate alerts.">
-          <Toggle value={criticalOnly} onChange={setCriticalOnly} />
-        </SettingRow>
-      </SectionCard>
-
-      <SectionCard title="Reporting">
-        <SettingRow label="Weekly Digest" description="Receive a weekly summary of company wellness KPIs every Monday morning.">
-          <Toggle value={weeklyDigest} onChange={setWeeklyDigest} />
-        </SettingRow>
-      </SectionCard>
-
-      <div className="flex items-start gap-3 p-4 bg-blue-50 dark:bg-blue-900/20 rounded-xl border border-blue-100 dark:border-blue-900/40 mb-5">
-        <Info size={15} className="text-blue-500 mt-0.5 flex-shrink-0" />
-        <p className="text-blue-600 dark:text-blue-400" style={{ fontSize: "0.78rem", lineHeight: 1.6 }}>
-          All AI-generated nudges are sent at the team level only. Individual employees never receive personalized stress-based messages without explicit departmental consent.
-        </p>
-      </div>
-
-      <div className="flex justify-end">
-        <button onClick={() => showToast("Notification preferences saved", "success")} className="flex items-center gap-2 px-6 py-2.5 bg-blue-600 text-white rounded-xl hover:bg-blue-700 transition-colors shadow-sm" style={{ fontSize: "0.875rem", fontWeight: 600 }}>
-          <Save size={15} /> Save Notification Settings
-        </button>
-      </div>
     </>
   );
 }
 
-export function SettingsView({ showToast }: Props) {
-  const [activeTab, setActiveTab] = useState<SettingsTab>("General");
-
-  const tabs: { key: SettingsTab; icon: React.ReactNode }[] = [
-    { key: "General", icon: <Settings size={16} /> },
-    { key: "Security", icon: <Shield size={16} /> },
-    { key: "Notifications", icon: <Bell size={16} /> },
+export function SettingsView({
+  showToast,
+  adminUser = { name: "Admin", email: "" },
+  onUpdateAdmin = () => {},
+  preferences,
+  onUpdatePreferences,
+  company = "",
+  onCompanyChange = () => {},
+}: Props) {
+  const sections = [
+    { id: "profile",       label: "Profile",       icon: <User size={16} /> },
+    { id: "company",       label: "Company",       icon: <Building2 size={16} /> },
+    { id: "general",       label: "General",       icon: <Settings size={16} /> },
+    { id: "notifications", label: "Notifications", icon: <Bell size={16} /> },
   ];
+  const active = useScrollSpy(sections.map(s => s.id));
+  const go = (id: string) => document.getElementById(id)?.scrollIntoView({ behavior: "smooth", block: "start" });
 
   return (
     <div>
@@ -279,31 +349,42 @@ export function SettingsView({ showToast }: Props) {
           <span className="w-1 h-5 rounded-full bg-blue-600 inline-block flex-shrink-0" />
           <h2 className="text-slate-800 dark:text-slate-100" style={{ fontSize: "1.2rem", fontWeight: 700 }}>Settings</h2>
         </div>
-        <p className="text-slate-500 dark:text-slate-400 ml-3.5" style={{ fontSize: "0.82rem" }}>System configuration and preferences</p>
+        <p className="text-slate-500 dark:text-slate-400 ml-3.5" style={{ fontSize: "0.82rem" }}>Profile, system configuration and preferences</p>
       </div>
 
       <div className="flex flex-col lg:flex-row gap-6">
+        {/* Left anchor rail — links scroll to the matching section on this page */}
         <div className="lg:w-52 flex-shrink-0">
-          <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-100 dark:border-slate-800 shadow-sm p-2 flex lg:flex-col gap-1">
-            {tabs.map(t => (
-              <button key={t.key} onClick={() => setActiveTab(t.key)}
+          <div className="lg:sticky lg:top-4 bg-white dark:bg-slate-900 rounded-2xl border border-slate-100 dark:border-slate-800 shadow-sm p-2 flex lg:flex-col gap-1">
+            {sections.map(s => (
+              <button key={s.id} onClick={() => go(s.id)}
                 className={`flex items-center gap-2.5 px-4 py-3 rounded-xl transition-all text-left w-full ${
-                  activeTab === t.key
+                  active === s.id
                     ? "bg-blue-600 text-white shadow-sm shadow-blue-200/50 dark:shadow-blue-900/40"
                     : "text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 hover:text-slate-900 dark:hover:text-white"
                 }`}
-                style={{ fontSize: "0.875rem", fontWeight: activeTab === t.key ? 600 : 400 }}>
-                <span className={activeTab === t.key ? "text-white" : "text-slate-400 dark:text-slate-500"}>{t.icon}</span>
-                {t.key}
+                style={{ fontSize: "0.875rem", fontWeight: active === s.id ? 600 : 400 }}>
+                <span className={active === s.id ? "text-white" : "text-slate-400 dark:text-slate-500"}>{s.icon}</span>
+                {s.label}
               </button>
             ))}
           </div>
         </div>
 
-        <div className="flex-1 min-w-0">
-          {activeTab === "General" && <GeneralSettings showToast={showToast} />}
-          {activeTab === "Security" && <SecuritySettings showToast={showToast} />}
-          {activeTab === "Notifications" && <NotificationsSettings showToast={showToast} />}
+        {/* Stacked sections */}
+        <div className="flex-1 min-w-0 space-y-10">
+          <section id="profile" className="scroll-mt-6">
+            <ProfileSettings adminUser={adminUser} onUpdateAdmin={onUpdateAdmin} showToast={showToast} />
+          </section>
+          <section id="company" className="scroll-mt-6">
+            <CompanySettings company={company} onCompanyChange={onCompanyChange} showToast={showToast} />
+          </section>
+          <section id="general" className="scroll-mt-6">
+            <GeneralSettings showToast={showToast} preferences={preferences} onUpdatePreferences={onUpdatePreferences} />
+          </section>
+          <section id="notifications" className="scroll-mt-6">
+            <NotificationsSettings showToast={showToast} />
+          </section>
         </div>
       </div>
     </div>

@@ -4,6 +4,7 @@ using Application.Abstractions.Data;
 using Application.Abstractions.Email;
 using Application.Abstractions.Identity;
 using Application.Abstractions.Notifications;
+using Application.Abstractions.RealTime;
 using Application.Abstractions.Repositories;
 using Infrastructure.Audit;
 using Infrastructure.Authorization;
@@ -16,6 +17,7 @@ using Infrastructure.Notifications.BackgroundServices;
 using Infrastructure.Notifications.Channels;
 using Infrastructure.Notifications.RealTime;
 using Infrastructure.Notifications.Repositories;
+using Infrastructure.RealTime;
 using Infrastructure.StressDetection;
 using Infrastructure.Time;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
@@ -54,6 +56,7 @@ public static class DependencyInjection
         services.AddSingleton<IDateTimeProvider, DateTimeProvider>();
         services.AddTransient<IDomainEventsDispatcher, DomainEventsDispatcher>();
         services.AddScoped<IAuditService, AuditService>();
+        services.AddSingleton<IStressStreamHub, InMemoryStressStreamHub>();
 
         services.AddHttpContextAccessor();
 
@@ -179,6 +182,14 @@ public static class DependencyInjection
 
         // Register email service
         services.AddScoped<IEmailService, EmailService>();
+
+        // Bind Web Push (VAPID) settings
+        services.Configure<Notifications.WebPushSettings>(
+            configuration.GetSection(Notifications.WebPushSettings.SectionName));
+
+        // Bind Slack webhook settings
+        services.Configure<Notifications.SlackSettings>(
+            configuration.GetSection(Notifications.SlackSettings.SectionName));
 
         return services;
     }
@@ -337,6 +348,7 @@ public static class DependencyInjection
         services.AddScoped<INotificationChannel, InAppNotificationChannel>();
         services.AddScoped<INotificationChannel, EmailNotificationChannel>();
         services.AddScoped<INotificationChannel, PushNotificationChannel>();
+        services.AddScoped<INotificationChannel, SlackNotificationChannel>();
 
         // Background services
         services.AddHostedService<NotificationCleanupService>();

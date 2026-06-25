@@ -33,6 +33,11 @@ internal sealed class StressReadingConfiguration : IEntityTypeConfiguration<Stre
             .IsRequired()
             .HasMaxLength(50);
 
+        builder.Property(r => r.Emotion)
+            .HasColumnName("emotion")
+            .HasMaxLength(1)
+            .IsRequired(false);
+
         builder.Property(r => r.Metadata)
             .HasColumnType("text");
 
@@ -44,5 +49,9 @@ internal sealed class StressReadingConfiguration : IEntityTypeConfiguration<Stre
 
         // Reverse-lookup high stress occurrences quickly.
         builder.HasIndex(r => new { r.UserId, r.Level, r.CreatedAt });
+
+        // Emotion aggregation queries (summary endpoint).
+        builder.HasIndex(r => new { r.UserId, r.Emotion, r.CreatedAt })
+            .HasDatabaseName("ix_stress_readings_user_id_emotion_created_at");
     }
 }

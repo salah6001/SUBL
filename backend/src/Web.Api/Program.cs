@@ -35,6 +35,8 @@ ProductionSecurityExtensions.ValidateProductionSecurityOrThrow(
     app.Configuration,
     app.Logger);
 
+app.UseWebSockets();
+
 app.MapEndpoints();
 
 if (app.Environment.IsDevelopment())

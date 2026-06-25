@@ -14,6 +14,7 @@ import {
 } from "lucide-react";
 import { initialChatMessages, promptChips, aiResponses } from "../data/mockData";
 import { chatApi } from "../api/chat";
+import { usePrefs } from "../lib/prefs";
 
 type Message = {
   id: string;
@@ -109,10 +110,11 @@ function genResponse(input: string): string {
     return "Sleep quality directly impacts stress resilience. Based on your typing patterns today, there are signs of mild cognitive fatigue.\n\n**Quick wins for tonight:**\n• Avoid screens 60 minutes before bed\n• Keep your room at 65–68°F (18–20°C)\n• Try the 10-3-2-1-0 protocol\n\nYour data shows that on days you logged 7+ hours, your stress score was 23% lower. Want me to set a sleep reminder?";
   if (l.includes("focus") || l.includes("concentrate"))
     return "I analyzed your focus patterns today. Your peak cognitive window is **9:00–11:30 AM** when typing fluency is highest.\n\n**For right now:**\n• Close all non-essential tabs\n• Put your phone face-down\n• Set a 52-minute focus timer\n• Use 40Hz binaural beats if your environment is noisy\n\nWant me to schedule a focus block on your calendar?";
-  return `Thanks for sharing that, Alex. Based on your wellness data today, your stress is at 34/100 — a healthy range.\n\nIf you'd like specific guidance, try asking me to:\n• **"Analyze My Mood"** — detailed emotional breakdown\n• **"Plan My Routine"** — optimized daily schedule\n• **"Help Me Relax"** — guided relaxation exercise\n\nIs there anything specific you'd like to explore?`;
+  return `I'm here to help with stress and focus. I can explain your stress insights, share quick practical tips, or help you find your way around the app.\n\nTry one of these:\n• **"Help Me Relax"** — short relaxation techniques\n• **"Quick Stress Tips"** — fast, actionable tips\n• **"Explain My Results"** — what your stress score means\n\nWhat would you like to do?`;
 }
 
 export function SublAI() {
+  const { t } = usePrefs();
   const [messages, setMessages] = useState<Message[]>(initialChatMessages);
   const [input, setInput] = useState("");
   const [isTyping, setIsTyping] = useState(false);
@@ -154,15 +156,15 @@ export function SublAI() {
               <Brain className="w-5 h-5 text-white" />
             </div>
             <div className="flex-1">
-              <p className="text-sm text-slate-800 dark:text-slate-200">Subl AI Assistant</p>
+              <p className="text-sm text-slate-800 dark:text-slate-200">{t("title.SublAI")}</p>
               <div className="flex items-center gap-1.5">
                 <span className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse" />
-                <span className="text-[11px] text-green-600 dark:text-green-400">Online · Monitoring active</span>
+                <span className="text-[11px] text-green-600 dark:text-green-400">{t("ai.online")}</span>
               </div>
             </div>
             <div className="flex items-center gap-1.5 text-[11px] text-slate-400 dark:text-slate-500">
               <Sparkles className="w-3.5 h-3.5" />
-              Powered by Subl AI
+              {t("ai.poweredBy")}
             </div>
           </div>
 
@@ -204,7 +206,7 @@ export function SublAI() {
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
                 onKeyDown={(e) => e.key === "Enter" && !e.shiftKey && (e.preventDefault(), send(input))}
-                placeholder="Ask Subl AI anything about your wellness..."
+                placeholder={t("ai.placeholder")}
                 disabled={isTyping}
                 className="flex-1 px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-800 dark:text-slate-200 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm disabled:opacity-60"
               />
@@ -217,7 +219,7 @@ export function SublAI() {
               </button>
             </div>
             <p className="text-[10px] text-slate-400 dark:text-slate-600 mt-2 text-center">
-              All conversations are private and encrypted. Data never shared.
+              {t("ai.privacyNote")}
             </p>
           </div>
         </div>

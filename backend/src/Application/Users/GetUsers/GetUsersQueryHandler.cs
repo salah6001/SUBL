@@ -4,6 +4,7 @@ using Application.Common.Filtering;
 using Application.Common.Sorting;
 using Application.Extensions;
 using Application.Users.Common;
+using Domain.Common;
 using Domain.Users;
 using Microsoft.EntityFrameworkCore;
 using SharedKernel;
@@ -49,7 +50,20 @@ internal sealed class GetUsersQueryHandler : IQueryHandler<GetUsersQuery, PagedR
             AccountType = u.AccountType,
             Status = u.Status,
             CreatedAt = u.CreatedAt,
-            LastLoginAt = u.LastLoginAt
+            LastLoginAt = u.LastLoginAt,
+            // Left-join the user's profile for org info shown in the admin list.
+            Department = _context.UserProfiles
+                .Where(p => p.UserId == u.Id)
+                .Select(p => (Department?)p.Department)
+                .FirstOrDefault(),
+            JobTitle = _context.UserProfiles
+                .Where(p => p.UserId == u.Id)
+                .Select(p => p.DisplayJobTitle)
+                .FirstOrDefault(),
+            PhoneNumber = _context.UserProfiles
+                .Where(p => p.UserId == u.Id)
+                .Select(p => p.PhoneNumber)
+                .FirstOrDefault()
         });
 
         // Paginate

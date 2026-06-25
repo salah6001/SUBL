@@ -23,6 +23,12 @@ public interface IStressSessionRepository
     Task<StressSession?> GetActiveForUserAsync(Guid userId, CancellationToken cancellationToken = default);
 
     /// <summary>
+    /// Gets the currently-active session for a device if any (Active or Paused),
+    /// regardless of which user owns it. Used when re-claiming a device.
+    /// </summary>
+    Task<StressSession?> GetActiveForDeviceAsync(Guid deviceId, CancellationToken cancellationToken = default);
+
+    /// <summary>
     /// Returns paginated session history for a user.
     /// </summary>
     Task<(List<StressSession> Items, int TotalCount)> GetPaginatedAsync(

@@ -2,6 +2,15 @@ import { useState, useRef, useEffect } from "react";
 import { Calendar, X, ChevronDown } from "lucide-react";
 import { format, differenceInCalendarDays } from "date-fns";
 import { CalendarRangePicker } from "./CalendarRangePicker";
+import { usePrefs } from "../lib/prefs";
+
+// Maps a quick-option value (kept in English for logic) to its i18n key.
+const QUICK_KEY: Record<string, string> = {
+  "Today": "filter.today",
+  "This Week": "filter.thisWeek",
+  "This Month": "filter.thisMonth",
+  "This Year": "filter.thisYear",
+};
 
 export type QuickOption = "Today" | "This Week" | "This Month" | "This Year";
 export type DateFilter = QuickOption | { start: Date; end: Date };
@@ -13,13 +22,14 @@ interface DateFilterBarProps {
 
 const QUICK: QuickOption[] = ["Today", "This Week", "This Month", "This Year"];
 
-function formatFilterLabel(f: DateFilter): string {
-  if (typeof f === "string") return `${f} data`;
+function formatFilterLabel(f: DateFilter, t: (k: string) => string): string {
+  if (typeof f === "string") return `${t(QUICK_KEY[f] ?? f)} ${t("filter.dataSuffix")}`;
   const days = differenceInCalendarDays(f.end, f.start) + 1;
   return `${format(f.start, "MMM d")} – ${format(f.end, "MMM d, yyyy")} (${days}d)`;
 }
 
 export function DateFilterBar({ filter, onChange }: DateFilterBarProps) {
+  const { t } = usePrefs();
   const [calOpen, setCalOpen] = useState(false);
   const popoverRef = useRef<HTMLDivElement>(null);
 
@@ -56,7 +66,7 @@ export function DateFilterBar({ filter, onChange }: DateFilterBarProps) {
                 : "text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200",
             ].join(" ")}
           >
-            {opt}
+            {t(QUICK_KEY[opt] ?? opt)}
           </button>
         ))}
       </div>
@@ -81,7 +91,7 @@ export function DateFilterBar({ filter, onChange }: DateFilterBarProps) {
           <span>
             {isCustom
               ? `${format(filter.start, "MMM d")} – ${format(filter.end, "MMM d, yyyy")}`
-              : "Custom Range"}
+              : t("filter.customRange")}
           </span>
           {isCustom ? (
             <span
@@ -119,8 +129,8 @@ export function DateFilterBar({ filter, onChange }: DateFilterBarProps) {
       {/* Active label */}
       <div className="ml-auto hidden md:flex items-center gap-1.5 text-[11px] text-slate-400 dark:text-slate-500">
         <span className="w-1.5 h-1.5 rounded-full bg-blue-500" />
-        <span>Showing:</span>
-        <span className="text-slate-600 dark:text-slate-300">{formatFilterLabel(filter)}</span>
+        <span>{t("filter.showing")}</span>
+        <span className="text-slate-600 dark:text-slate-300">{formatFilterLabel(filter, t)}</span>
       </div>
     </div>
   );

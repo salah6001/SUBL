@@ -239,6 +239,145 @@ namespace Infrastructure.Database.Migrations
                     b.ToTable("account_settings", "public");
                 });
 
+            modelBuilder.Entity("Domain.Alerts.StressAlert", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<DateTime?>("AcknowledgedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("acknowledged_at");
+
+                    b.Property<int>("Category")
+                        .HasColumnType("integer")
+                        .HasColumnName("category");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<int>("Department")
+                        .HasColumnType("integer")
+                        .HasColumnName("department");
+
+                    b.Property<string>("Message")
+                        .HasMaxLength(1000)
+                        .HasColumnType("character varying(1000)")
+                        .HasColumnName("message");
+
+                    b.Property<DateTime?>("ResolvedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("resolved_at");
+
+                    b.Property<int>("Severity")
+                        .HasColumnType("integer")
+                        .HasColumnName("severity");
+
+                    b.Property<int>("Status")
+                        .HasColumnType("integer")
+                        .HasColumnName("status");
+
+                    b.Property<string>("Title")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)")
+                        .HasColumnName("title");
+
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("user_id");
+
+                    b.HasKey("Id")
+                        .HasName("pk_stress_alerts");
+
+                    b.HasIndex("Department")
+                        .HasDatabaseName("ix_stress_alerts_department");
+
+                    b.HasIndex("UserId")
+                        .HasDatabaseName("ix_stress_alerts_user_id");
+
+                    b.HasIndex("Status", "CreatedAt")
+                        .HasDatabaseName("ix_stress_alerts_status_created_at");
+
+                    b.ToTable("stress_alerts", "public");
+                });
+
+            modelBuilder.Entity("Domain.Articles.Article", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<string>("Author")
+                        .HasMaxLength(120)
+                        .HasColumnType("character varying(120)")
+                        .HasColumnName("author");
+
+                    b.Property<string>("AuthorRole")
+                        .HasMaxLength(120)
+                        .HasColumnType("character varying(120)")
+                        .HasColumnName("author_role");
+
+                    b.Property<int>("Category")
+                        .HasColumnType("integer")
+                        .HasColumnName("category");
+
+                    b.Property<string>("Content")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("content");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<string>("Excerpt")
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)")
+                        .HasColumnName("excerpt");
+
+                    b.Property<string>("Image")
+                        .HasMaxLength(1000)
+                        .HasColumnType("character varying(1000)")
+                        .HasColumnName("image");
+
+                    b.Property<bool>("IsPublished")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("boolean")
+                        .HasDefaultValue(false)
+                        .HasColumnName("is_published");
+
+                    b.Property<DateTime?>("PublishedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("published_at");
+
+                    b.Property<string>("ReadTime")
+                        .HasMaxLength(40)
+                        .HasColumnType("character varying(40)")
+                        .HasColumnName("read_time");
+
+                    b.Property<string>("Title")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)")
+                        .HasColumnName("title");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at");
+
+                    b.HasKey("Id")
+                        .HasName("pk_articles");
+
+                    b.HasIndex("IsPublished", "Category")
+                        .HasDatabaseName("ix_articles_is_published_category");
+
+                    b.ToTable("articles", "public");
+                });
+
             modelBuilder.Entity("Domain.AuditLogs.AuditLog", b =>
                 {
                     b.Property<Guid>("Id")
@@ -328,6 +467,146 @@ namespace Infrastructure.Database.Migrations
                     b.ToTable("audit_logs", "public");
                 });
 
+            modelBuilder.Entity("Domain.DeviceSettings.UserDeviceSettings", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<string>("DateFormat")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)")
+                        .HasColumnName("date_format");
+
+                    b.Property<string>("Language")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)")
+                        .HasColumnName("language");
+
+                    b.Property<int>("MonitoringInterval")
+                        .HasColumnType("integer")
+                        .HasColumnName("monitoring_interval");
+
+                    b.Property<int>("StressThreshold")
+                        .HasColumnType("integer")
+                        .HasColumnName("stress_threshold");
+
+                    b.Property<string>("Theme")
+                        .IsRequired()
+                        .ValueGeneratedOnAdd()
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)")
+                        .HasDefaultValue("system")
+                        .HasColumnName("theme");
+
+                    b.Property<string>("Timezone")
+                        .IsRequired()
+                        .HasMaxLength(60)
+                        .HasColumnType("character varying(60)")
+                        .HasColumnName("timezone");
+
+                    b.Property<DateTime>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at");
+
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("user_id");
+
+                    b.HasKey("Id")
+                        .HasName("pk_user_device_settings");
+
+                    b.HasIndex("UserId")
+                        .IsUnique()
+                        .HasDatabaseName("ix_user_device_settings_user_id");
+
+                    b.ToTable("user_device_settings", "public");
+                });
+
+            modelBuilder.Entity("Domain.Habits.Habit", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<int>("Category")
+                        .HasColumnType("integer")
+                        .HasColumnName("category");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<string>("Icon")
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)")
+                        .HasColumnName("icon");
+
+                    b.Property<bool>("IsActive")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("boolean")
+                        .HasDefaultValue(true)
+                        .HasColumnName("is_active");
+
+                    b.Property<string>("Label")
+                        .IsRequired()
+                        .HasMaxLength(150)
+                        .HasColumnType("character varying(150)")
+                        .HasColumnName("label");
+
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("user_id");
+
+                    b.HasKey("Id")
+                        .HasName("pk_habits");
+
+                    b.HasIndex("UserId", "IsActive")
+                        .HasDatabaseName("ix_habits_user_id_is_active");
+
+                    b.ToTable("habits", "public");
+                });
+
+            modelBuilder.Entity("Domain.Habits.HabitCompletion", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<DateTime>("CompletedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("completed_at");
+
+                    b.Property<DateOnly>("Date")
+                        .HasColumnType("date")
+                        .HasColumnName("date");
+
+                    b.Property<Guid>("HabitId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("habit_id");
+
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("user_id");
+
+                    b.HasKey("Id")
+                        .HasName("pk_habit_completions");
+
+                    b.HasIndex("HabitId", "Date")
+                        .IsUnique()
+                        .HasDatabaseName("ix_habit_completions_habit_id_date");
+
+                    b.HasIndex("UserId", "Date")
+                        .HasDatabaseName("ix_habit_completions_user_id_date");
+
+                    b.ToTable("habit_completions", "public");
+                });
+
             modelBuilder.Entity("Domain.Notifications.Notification", b =>
                 {
                     b.Property<Guid>("Id")
@@ -397,6 +676,10 @@ namespace Infrastructure.Database.Migrations
                         .HasDefaultValue(false)
                         .HasColumnName("is_read");
 
+                    b.Property<bool>("IsResolved")
+                        .HasColumnType("boolean")
+                        .HasColumnName("is_resolved");
+
                     b.Property<string>("Message")
                         .IsRequired()
                         .HasMaxLength(1000)
@@ -414,6 +697,10 @@ namespace Infrastructure.Database.Migrations
                     b.Property<DateTime?>("ReadAt")
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("read_at");
+
+                    b.Property<DateTime?>("ResolvedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("resolved_at");
 
                     b.Property<DateTime?>("ScheduledFor")
                         .HasColumnType("timestamp with time zone")
@@ -986,6 +1273,55 @@ namespace Infrastructure.Database.Migrations
                     b.ToTable("role_permissions", "public");
                 });
 
+            modelBuilder.Entity("Domain.Privacy.UserPrivacySettings", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<bool>("EmployerDataSharing")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("boolean")
+                        .HasDefaultValue(false)
+                        .HasColumnName("employer_data_sharing");
+
+                    b.Property<bool>("KeystrokeDynamics")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("boolean")
+                        .HasDefaultValue(true)
+                        .HasColumnName("keystroke_dynamics");
+
+                    b.Property<bool>("ProductAnalytics")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("boolean")
+                        .HasDefaultValue(false)
+                        .HasColumnName("product_analytics");
+
+                    b.Property<bool>("SentimentAnalysis")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("boolean")
+                        .HasDefaultValue(false)
+                        .HasColumnName("sentiment_analysis");
+
+                    b.Property<DateTime>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at");
+
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("user_id");
+
+                    b.HasKey("Id")
+                        .HasName("pk_user_privacy_settings");
+
+                    b.HasIndex("UserId")
+                        .IsUnique()
+                        .HasDatabaseName("ix_user_privacy_settings_user_id");
+
+                    b.ToTable("user_privacy_settings", "public");
+                });
+
             modelBuilder.Entity("Domain.StressDetection.Device", b =>
                 {
                     b.Property<Guid>("Id")
@@ -997,6 +1333,10 @@ namespace Infrastructure.Database.Migrations
                         .HasMaxLength(50)
                         .HasColumnType("character varying(50)")
                         .HasColumnName("agent_version");
+
+                    b.Property<Guid?>("ClaimedByUserId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("claimed_by_user_id");
 
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("timestamp with time zone")
@@ -1050,6 +1390,9 @@ namespace Infrastructure.Database.Migrations
 
                     b.HasKey("Id")
                         .HasName("pk_devices");
+
+                    b.HasIndex("ClaimedByUserId")
+                        .HasDatabaseName("ix_devices_claimed_by_user_id");
 
                     b.HasIndex("UserId", "DeviceFingerprint")
                         .IsUnique()
@@ -1138,6 +1481,11 @@ namespace Infrastructure.Database.Migrations
                         .HasColumnType("character varying(20)")
                         .HasColumnName("level");
 
+                    b.Property<string>("Emotion")
+                        .HasMaxLength(1)
+                        .HasColumnType("character varying(1)")
+                        .HasColumnName("emotion");
+
                     b.Property<string>("Metadata")
                         .HasColumnType("text")
                         .HasColumnName("metadata");
@@ -1179,6 +1527,9 @@ namespace Infrastructure.Database.Migrations
 
                     b.HasIndex("UserId", "Level", "CreatedAt")
                         .HasDatabaseName("ix_stress_readings_user_id_level_created_at");
+
+                    b.HasIndex("UserId", "Emotion", "CreatedAt")
+                        .HasDatabaseName("ix_stress_readings_user_id_emotion_created_at");
 
                     b.ToTable("stress_readings", "public");
                 });
@@ -1469,6 +1820,146 @@ namespace Infrastructure.Database.Migrations
                         .HasDatabaseName("ix_subscriptions_plan_id");
 
                     b.ToTable("subscriptions", "public");
+                });
+
+            modelBuilder.Entity("Domain.Surveys.SurveyAnswer", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<Guid>("QuestionId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("question_id");
+
+                    b.Property<Guid>("ResponseId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("response_id");
+
+                    b.Property<int>("Value")
+                        .HasColumnType("integer")
+                        .HasColumnName("value");
+
+                    b.HasKey("Id")
+                        .HasName("pk_survey_answers");
+
+                    b.HasIndex("QuestionId")
+                        .HasDatabaseName("ix_survey_answers_question_id");
+
+                    b.HasIndex("ResponseId")
+                        .HasDatabaseName("ix_survey_answers_response_id");
+
+                    b.ToTable("survey_answers", "public");
+                });
+
+            modelBuilder.Entity("Domain.Surveys.SurveyQuestion", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<string>("Category")
+                        .IsRequired()
+                        .HasMaxLength(60)
+                        .HasColumnType("character varying(60)")
+                        .HasColumnName("category");
+
+                    b.Property<bool>("IsActive")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("boolean")
+                        .HasDefaultValue(true)
+                        .HasColumnName("is_active");
+
+                    b.Property<int>("Order")
+                        .HasColumnType("integer")
+                        .HasColumnName("order");
+
+                    b.Property<string>("Text")
+                        .IsRequired()
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)")
+                        .HasColumnName("text");
+
+                    b.HasKey("Id")
+                        .HasName("pk_survey_questions");
+
+                    b.ToTable("survey_questions", "public");
+
+                    b.HasData(
+                        new
+                        {
+                            Id = new Guid("11111111-1111-1111-1111-111111111111"),
+                            Category = "Control",
+                            IsActive = true,
+                            Order = 1,
+                            Text = "How often have you felt unable to control important things in your work life this week?"
+                        },
+                        new
+                        {
+                            Id = new Guid("22222222-2222-2222-2222-222222222222"),
+                            Category = "Anxiety",
+                            IsActive = true,
+                            Order = 2,
+                            Text = "How frequently have you felt nervous, anxious, or on edge during your workday?"
+                        },
+                        new
+                        {
+                            Id = new Guid("33333333-3333-3333-3333-333333333333"),
+                            Category = "Focus",
+                            IsActive = true,
+                            Order = 3,
+                            Text = "How often have you found difficulty concentrating on tasks?"
+                        },
+                        new
+                        {
+                            Id = new Guid("44444444-4444-4444-4444-444444444444"),
+                            Category = "Physical",
+                            IsActive = true,
+                            Order = 4,
+                            Text = "How frequently have you experienced physical symptoms (headache, tight shoulders)?"
+                        },
+                        new
+                        {
+                            Id = new Guid("55555555-5555-5555-5555-555555555555"),
+                            Category = "Overwhelm",
+                            IsActive = true,
+                            Order = 5,
+                            Text = "How often have you felt difficulties were piling up so high you could not cope?"
+                        });
+                });
+
+            modelBuilder.Entity("Domain.Surveys.SurveyResponse", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<int>("Level")
+                        .HasColumnType("integer")
+                        .HasColumnName("level");
+
+                    b.Property<DateTime>("SubmittedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("submitted_at");
+
+                    b.Property<int>("TotalScore")
+                        .HasColumnType("integer")
+                        .HasColumnName("total_score");
+
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("user_id");
+
+                    b.HasKey("Id")
+                        .HasName("pk_survey_responses");
+
+                    b.HasIndex("UserId", "SubmittedAt")
+                        .HasDatabaseName("ix_survey_responses_user_id_submitted_at");
+
+                    b.ToTable("survey_responses", "public");
                 });
 
             modelBuilder.Entity("Domain.Users.User", b =>
@@ -1815,6 +2306,48 @@ namespace Infrastructure.Database.Migrations
                     b.Navigation("Account");
                 });
 
+            modelBuilder.Entity("Domain.Alerts.StressAlert", b =>
+                {
+                    b.HasOne("Domain.Users.User", null)
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_stress_alerts_users_user_id");
+                });
+
+            modelBuilder.Entity("Domain.DeviceSettings.UserDeviceSettings", b =>
+                {
+                    b.HasOne("Domain.Users.User", null)
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_user_device_settings_users_user_id");
+                });
+
+            modelBuilder.Entity("Domain.Habits.Habit", b =>
+                {
+                    b.HasOne("Domain.Users.User", null)
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_habits_users_user_id");
+                });
+
+            modelBuilder.Entity("Domain.Habits.HabitCompletion", b =>
+                {
+                    b.HasOne("Domain.Habits.Habit", "Habit")
+                        .WithMany("Completions")
+                        .HasForeignKey("HabitId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_habit_completions_habits_habit_id");
+
+                    b.Navigation("Habit");
+                });
+
             modelBuilder.Entity("Domain.Notifications.Notification", b =>
                 {
                     b.HasOne("Domain.Users.User", "CreatedBy")
@@ -1934,6 +2467,16 @@ namespace Infrastructure.Database.Migrations
                     b.Navigation("Role");
                 });
 
+            modelBuilder.Entity("Domain.Privacy.UserPrivacySettings", b =>
+                {
+                    b.HasOne("Domain.Users.User", null)
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_user_privacy_settings_users_user_id");
+                });
+
             modelBuilder.Entity("Domain.StressDetection.Device", b =>
                 {
                     b.HasOne("Domain.Users.User", "User")
@@ -2031,6 +2574,33 @@ namespace Infrastructure.Database.Migrations
                     b.Navigation("Plan");
                 });
 
+            modelBuilder.Entity("Domain.Surveys.SurveyAnswer", b =>
+                {
+                    b.HasOne("Domain.Surveys.SurveyQuestion", null)
+                        .WithMany()
+                        .HasForeignKey("QuestionId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_survey_answers_survey_questions_question_id");
+
+                    b.HasOne("Domain.Surveys.SurveyResponse", null)
+                        .WithMany("Answers")
+                        .HasForeignKey("ResponseId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_survey_answers_survey_responses_response_id");
+                });
+
+            modelBuilder.Entity("Domain.Surveys.SurveyResponse", b =>
+                {
+                    b.HasOne("Domain.Users.User", null)
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_survey_responses_users_user_id");
+                });
+
             modelBuilder.Entity("Domain.Users.UserProfile", b =>
                 {
                     b.HasOne("Domain.Users.User", "User")
@@ -2085,6 +2655,11 @@ namespace Infrastructure.Database.Migrations
                     b.Navigation("Subscriptions");
                 });
 
+            modelBuilder.Entity("Domain.Habits.Habit", b =>
+                {
+                    b.Navigation("Completions");
+                });
+
             modelBuilder.Entity("Domain.Notifications.Notification", b =>
                 {
                     b.Navigation("Deliveries");
@@ -2112,6 +2687,11 @@ namespace Infrastructure.Database.Migrations
             modelBuilder.Entity("Domain.Subscriptions.Subscription", b =>
                 {
                     b.Navigation("Invoices");
+                });
+
+            modelBuilder.Entity("Domain.Surveys.SurveyResponse", b =>
+                {
+                    b.Navigation("Answers");
                 });
 
             modelBuilder.Entity("Domain.Users.User", b =>

@@ -23,6 +23,11 @@ internal sealed class UserPushTokenConfiguration : IEntityTypeConfiguration<User
             .OnDelete(DeleteBehavior.Cascade);
 
         builder.Property(t => t.Token)
+            // NOTE: the DB column was widened to varchar(1000) out-of-band to hold
+            // the full Web Push subscription JSON (endpoint + keys). We keep the
+            // model attribute at 500 to match the existing migration snapshot (this
+            // repo applies schema changes manually); EF does not enforce MaxLength
+            // on write, so subscriptions up to 1000 chars persist fine.
             .HasMaxLength(500)
             .IsRequired();
 

@@ -1,62 +1,61 @@
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState } from "react";
 import { Activity, TrendingDown, TrendingUp, Minus } from "lucide-react";
-import { dashboardApi, type ActivityEvent } from "../api/dashboard";
+import { fetchActivityFeed, type ActivityItem } from "../lib/admin/activityApi";
+import { ApiError } from "../lib/apiClient";
+
+type FeedType = "up" | "down" | "neutral";
 
 interface FeedItem {
   id: string;
-  time: string;
   team: string;
   message: string;
-  type: "up" | "down" | "neutral";
-  ago: number;
+  type: FeedType;
+  ago: string;
 }
 
-const FALLBACK: FeedItem[] = [
-  { id: "1", time: "09:42 AM", team: "HR Team",          message: "Stress levels returned to normal after wellness session", type: "down",    ago: 2  },
-  { id: "2", time: "09:30 AM", team: "Dev Team Alpha",   message: "Burnout risk indicator elevated — workload review queued", type: "up",      ago: 14 },
-  { id: "3", time: "09:18 AM", team: "Marketing",        message: "Stress levels stable — no interventions required",         type: "neutral", ago: 26 },
-  { id: "4", time: "09:05 AM", team: "Customer Support", message: "High stress spike detected in morning shift",               type: "up",      ago: 39 },
-];
-
-const typeConfig = {
-  up:      { icon: <TrendingUp size={13} />,   color: "text-red-500 dark:text-red-400",    dot: "bg-red-400"   },
+const typeConfig: Record<FeedType, { icon: React.ReactNode; color: string; dot: string }> = {
+  up:      { icon: <TrendingUp size={13} />,   color: "text-red-500 dark:text-red-400",   dot: "bg-red-400" },
   down:    { icon: <TrendingDown size={13} />, color: "text-green-500 dark:text-green-400", dot: "bg-green-400" },
-  neutral: { icon: <Minus size={13} />,        color: "text-blue-500 dark:text-blue-400",  dot: "bg-blue-400"  },
+  neutral: { icon: <Minus size={13} />,        color: "text-blue-500 dark:text-blue-400",  dot: "bg-blue-400" },
 };
 
-function toFeedItem(e: ActivityEvent): FeedItem {
-  const ago = Math.round((Date.now() - new Date(e.timestamp).getTime()) / 60000);
-  const type: FeedItem["type"] = e.severity === "warning" ? "up" : e.type === "audit" ? "neutral" : "down";
-  const time = new Date(e.timestamp).toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit" });
-  return { id: e.id, time, team: e.type === "stress_alert" ? "Stress Alert" : "System", message: e.message, type, ago: Math.max(0, ago) };
+function relativeTime(iso: string): string {
+  const diffMs = Date.now() - new Date(iso).getTime();
+  const mins = Math.max(0, Math.round(diffMs / 60000));
+  if (mins < 60) return `${mins}m ago`;
+  const hrs = Math.round(mins / 60);
+  if (hrs < 24) return `${hrs}h ago`;
+  return `${Math.round(hrs / 24)}d ago`;
 }
 
-export function LiveActivityFeed() {
-  const [feed, setFeed] = useState<FeedItem[]>(FALLBACK);
+function typeForAction(action: string): FeedType {
+  const a = action.toLowerCase();
+  if (a.includes("fail") || a.includes("delete") || a.includes("suspend") || a.includes("error") || a.includes("revoke")) {
+    return "up";
+  }
+  if (a.includes("login") || a.includes("activat") || a.includes("created") || a.includes("resolved")) {
+    return "down";
+  }
+  return "neutral";
+}
 
-  const refresh = useCallback(() => {
-    dashboardApi.getActivityFeed()
-      .then(events => {
-        if (events.length > 0) setFeed(events.map(toFeedItem));
-        else setFeed(prev => prev.map(item => ({ ...item, ago: item.ago + 1 })));
-      })
-      .catch(() => {
-        setFeed(prev => prev.map(item => ({ ...item, ago: item.ago + 1 })));
-      });
-  }, []);
+function toFeedItem(item: ActivityItem): FeedItem {
+  return {
+    id: item.id,
+    team: item.userEmail ?? item.entityType ?? "System",
+    message: item.description ?? item.actionName,
+    type: typeForAction(item.actionName),
+    ago: relativeTime(item.timestamp),
+  };
+}
 
-  useEffect(() => {
-    refresh();
-    const interval = setInterval(refresh, 30_000);
-    return () => clearInterval(interval);
-  }, [refresh]);
-
+function Shell({ children }: { children: React.ReactNode }) {
   return (
     <div className="bg-white dark:bg-slate-900 rounded-2xl p-6 shadow-sm border border-slate-100 dark:border-slate-800">
       <div className="flex items-center justify-between mb-5">
         <div>
           <h3 className="text-slate-800 dark:text-slate-100" style={{ fontWeight: 600 }}>Live Activity Feed</h3>
-          <p className="text-slate-400 dark:text-slate-500 mt-0.5" style={{ fontSize: "0.78rem" }}>Team-level events in real time</p>
+          <p className="text-slate-400 dark:text-slate-500 mt-0.5" style={{ fontSize: "0.78rem" }}>Recent system events</p>
         </div>
         <div className="flex items-center gap-1.5 text-green-500 dark:text-green-400" style={{ fontSize: "0.75rem", fontWeight: 600 }}>
           <Activity size={14} />
@@ -64,7 +63,44 @@ export function LiveActivityFeed() {
           <span className="w-1.5 h-1.5 rounded-full bg-green-400 animate-pulse" />
         </div>
       </div>
+      {children}
+    </div>
+  );
+}
 
+export function LiveActivityFeed() {
+  const [feed, setFeed] = useState<FeedItem[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    function load() {
+      fetchActivityFeed()
+        .then(items => { if (!cancelled) setFeed(items.map(toFeedItem)); })
+        .catch(err => { if (!cancelled) setError(err instanceof ApiError ? err.displayMessage : "Couldn't load activity."); })
+        .finally(() => { if (!cancelled) setLoading(false); });
+    }
+
+    load();
+    // Poll every 60s to keep the feed fresh (SignalR can replace this later).
+    const interval = setInterval(load, 60000);
+    return () => { cancelled = true; clearInterval(interval); };
+  }, []);
+
+  if (loading) {
+    return <Shell><div className="py-10 flex justify-center"><span className="w-6 h-6 border-2 border-blue-200 border-t-blue-600 rounded-full animate-spin" /></div></Shell>;
+  }
+  if (error) {
+    return <Shell><p className="py-8 text-center text-red-500" style={{ fontSize: "0.82rem" }}>{error}</p></Shell>;
+  }
+  if (feed.length === 0) {
+    return <Shell><p className="py-8 text-center text-slate-400 dark:text-slate-500" style={{ fontSize: "0.82rem" }}>No recent activity.</p></Shell>;
+  }
+
+  return (
+    <Shell>
       <div className="space-y-4">
         {feed.map(item => {
           const cfg = typeConfig[item.type];
@@ -77,7 +113,7 @@ export function LiveActivityFeed() {
               <div className="pb-4 flex-1 min-w-0">
                 <div className="flex items-center justify-between gap-2 mb-0.5">
                   <p className="text-slate-700 dark:text-slate-200 truncate" style={{ fontSize: "0.82rem", fontWeight: 600 }}>{item.team}</p>
-                  <span className="text-slate-400 dark:text-slate-500 flex-shrink-0" style={{ fontSize: "0.7rem" }}>{item.ago}m ago</span>
+                  <span className="text-slate-400 dark:text-slate-500 flex-shrink-0" style={{ fontSize: "0.7rem" }}>{item.ago}</span>
                 </div>
                 <div className={`flex items-start gap-1.5 ${cfg.color}`}>
                   <span className="mt-0.5 flex-shrink-0">{cfg.icon}</span>
@@ -88,6 +124,6 @@ export function LiveActivityFeed() {
           );
         })}
       </div>
-    </div>
+    </Shell>
   );
 }

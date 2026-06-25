@@ -25,6 +25,8 @@ class Reading:
     keystroke_count: int = 0
     delete_count: int = 0
     at: float = 0.0
+    emotion: str = ""
+    emotion_label: str = ""
 
 
 @dataclass(frozen=True)

@@ -102,6 +102,12 @@ export interface Device {
   lastSeen: string;
   enrolledAt: string;
   stressSignal: StressLevel;
+  /** Email of the user this device's keystroke data is attributed to. */
+  dataOwner?: string;
+  /** User id of the claimer, or null when unclaimed (falls back to registrant). */
+  claimedByUserId?: string | null;
+  /** True when a user has explicitly claimed this device. */
+  isClaimed?: boolean;
 }
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────

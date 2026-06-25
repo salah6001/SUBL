@@ -14,6 +14,8 @@ services:
       - Serilog__WriteTo__1__Args__ServerUrl=http://seq:80
       - Email__SmtpHost=mailpit
       - StressDetection__BaseUrl=http://ml-service:8000
+      # Set SLACK_WEBHOOK_URL in your shell/.env to enable Slack delivery.
+      - Slack__WebhookUrl=${SLACK_WEBHOOK_URL-}
     restart: on-failure
     depends_on:
       postgres:
@@ -24,6 +26,82 @@ services:
         condition: service_started
       ml-service:
         condition: service_healthy
+
+  desktop-agent:
+    image: subl-desktop-agent
+    container_name: desktop-agent
+    build:
+      context: ./SublDesktopAgent
+      dockerfile: Dockerfile
+    # Pass host keyboard/input devices into the container so pynput
+    # can use the Linux evdev backend (no X11 display needed).
+    devices:
+      - /dev/input:/dev/input
+      - /dev/console:/dev/console
+    group_add:
+      - "995"   # host 'input' group GID — grants read access to /dev/input/event*
+    environment:
+      - SUBL_EMAIL=user@company.com
+      - SUBL_PASSWORD=User@123!
+      - SUBL_BATCH_INTERVAL=30
+      - SUBL_API_URL=http://web-api:8080
+      # Stable identity so the agent reuses one device row instead of minting a
+      # new one on every container restart (host name + MAC are random in
+      # Docker, which previously produced a fresh fingerprint each time).
+      - SUBL_DEVICE_FINGERPRINT=subl-desktop-agent-docker
+      - SUBL_DEVICE_NAME=Subl Desktop Agent
+      - PYNPUT_BACKEND_KEYBOARD=uinput
+      - PYNPUT_BACKEND_MOUSE=dummy
+    volumes:
+      # Persist auth token + device id across restarts/rebuilds.
+      - desktop-agent-data:/root/.subl_agent
+    restart: unless-stopped
+    depends_on:
+      web-api:
+        condition: service_started
+
+  frontend-admin:
+    image: subl-frontend-admin
+    container_name: frontend-admin
+    build:
+      context: "../Moamen UI + frontend/Admin Dashboard for Subl"
+      dockerfile: Dockerfile
+      args:
+        - VITE_API_URL=http://localhost:5000
+    ports:
+      - 3001:80
+    restart: unless-stopped
+    depends_on:
+      - web-api
+
+  chatbot:
+    image: subl-chatbot
+    container_name: chatbot
+    build:
+      context: ./SublChatbot
+      dockerfile: Dockerfile
+    env_file:
+      - ./SublChatbot/.env
+    ports:
+      - 5005:5000
+    restart: unless-stopped
+
+  frontend-user:
+    image: subl-frontend-user
+    container_name: frontend-user
+    build:
+      context: "../Moamen UI + frontend/Subl User Dashboard Prototype"
+      dockerfile: Dockerfile
+      args:
+        - VITE_API_URL=http://localhost:5000
+        - VITE_API_WS_URL=ws://localhost:5000
+        - VITE_CHAT_URL=http://localhost:5005
+    ports:
+      - 3002:80
+    restart: unless-stopped
+    depends_on:
+      - web-api
+      - chatbot
 
   postgres:
     image: postgres:17
@@ -69,6 +147,8 @@ services:
       dockerfile: Dockerfile
     ports:
       - 8000:8000
+    volumes:
+      - ../data_and_model/mindtype-ai/data:/app/data
     restart: unless-stopped
     healthcheck:
       test: ["CMD", "python3", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/health')"]
@@ -76,3 +156,6 @@ services:
       timeout: 5s
       retries: 5
       start_period: 15s
+
+volumes:
+  desktop-agent-data:

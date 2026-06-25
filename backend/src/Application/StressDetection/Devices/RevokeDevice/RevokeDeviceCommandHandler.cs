@@ -19,12 +19,14 @@ internal sealed class RevokeDeviceCommandHandler(
     {
         Guid userId = currentUserService.UserId;
 
-        Device? device = await deviceRepository.GetByIdForUserAsync(
+        // A device may be removed by the account that registered it OR by the
+        // account currently feeding from it (the claimer). This lets a user
+        // clean stale/offline machines out of their monitoring list.
+        Device? device = await deviceRepository.GetByIdAsync(
             request.DeviceId,
-            userId,
             cancellationToken);
 
-        if (device is null)
+        if (device is null || device.UserId != userId && device.ClaimedByUserId != userId)
         {
             return Result.Failure(DeviceErrors.NotFound(request.DeviceId));
         }

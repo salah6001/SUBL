@@ -46,10 +46,16 @@ internal sealed class GetCurrentUserProfileQueryHandler : IQueryHandler<GetCurre
             })
             .FirstOrDefaultAsync(cancellationToken);
 
-        if (profile is null)
+        // A profile-less account (older sign-ups) should still load: return an
+        // empty default so the dashboard/settings show the real identity from
+        // /users/me with blank profile fields instead of failing to a mock.
+        profile ??= new UserProfileResponse
         {
-            return Result.Failure<UserProfileResponse>(UserErrors.ProfileNotFound(_currentUser.UserId));
-        }
+            Id = Guid.Empty,
+            UserId = _currentUser.UserId,
+            Department = Domain.Common.Department.Unassigned.ToString(),
+            Skills = []
+        };
 
         return Result.Success(profile);
     }

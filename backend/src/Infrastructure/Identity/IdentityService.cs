@@ -697,8 +697,18 @@ internal sealed class IdentityService : IIdentityService
         ApplicationIdentityUser user,
         CancellationToken cancellationToken = default)
     {
-        // Get roles from Identity
-        IList<string> roles = await _userManager.GetRolesAsync(user);
+        // Get roles from Identity (may be empty if identity.roles is not seeded)
+        IList<string> identityRoles = await _userManager.GetRolesAsync(user);
+
+        // Also read domain role names so they appear in the JWT (source of truth for IsSuperAdmin checks)
+        List<string> domainRoles = await _appContext.UserRoles
+            .AsNoTracking()
+            .Where(ur => ur.UserId == user.DomainUserId)
+            .Where(ur => ur.Role != null && ur.Role.IsActive)
+            .Select(ur => ur.Role!.Name)
+            .ToListAsync(cancellationToken);
+
+        var roles = identityRoles.Union(domainRoles).Distinct().ToList();
 
         // Get permissions from Domain layer
         List<string> permissions = await _appContext.UserRoles

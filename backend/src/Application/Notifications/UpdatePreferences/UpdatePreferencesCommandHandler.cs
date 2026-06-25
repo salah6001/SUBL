@@ -23,49 +23,65 @@ internal sealed class UpdatePreferencesCommandHandler(
             userId,
             cancellationToken);
 
+        // Merge: any field the client omitted (null) keeps its current value, so
+        // toggling one switch never clobbers the others.
+        bool inAppEnabled = request.InAppEnabled ?? preferences.InAppEnabled;
+        bool emailEnabled = request.EmailEnabled ?? preferences.EmailEnabled;
+        bool pushEnabled = request.PushEnabled ?? preferences.PushEnabled;
+        bool smsEnabled = request.SmsEnabled ?? preferences.SmsEnabled;
+        bool emailDigestEnabled = request.EmailDigestEnabled ?? preferences.EmailDigestEnabled;
+        TimeOnly? emailDigestTime = request.EmailDigestTime ?? preferences.EmailDigestTime;
+        bool quietHoursEnabled = request.QuietHoursEnabled ?? preferences.QuietHoursEnabled;
+        TimeOnly? quietHoursStart = request.QuietHoursStart ?? preferences.QuietHoursStart;
+        TimeOnly? quietHoursEnd = request.QuietHoursEnd ?? preferences.QuietHoursEnd;
+        string? quietHoursTimezone = request.QuietHoursTimezone ?? preferences.QuietHoursTimezone;
+
         // Validate timezone if provided
-        if (request.QuietHoursEnabled && !string.IsNullOrEmpty(request.QuietHoursTimezone))
+        if (quietHoursEnabled && !string.IsNullOrEmpty(quietHoursTimezone))
         {
             try
             {
-                TimeZoneInfo.FindSystemTimeZoneById(request.QuietHoursTimezone);
+                TimeZoneInfo.FindSystemTimeZoneById(quietHoursTimezone);
             }
             catch (TimeZoneNotFoundException)
             {
-                return Result.Failure(NotificationErrors.InvalidTimezone(request.QuietHoursTimezone));
+                return Result.Failure(NotificationErrors.InvalidTimezone(quietHoursTimezone));
             }
         }
 
-        // Validate quiet hours
-        if (request.QuietHoursEnabled &&
-            (!request.QuietHoursStart.HasValue || !request.QuietHoursEnd.HasValue))
+        // When quiet hours are switched on without an explicit window, default to
+        // a reasonable overnight span (22:00–07:00) so a single toggle works.
+        if (quietHoursEnabled)
         {
-            return Result.Failure(NotificationErrors.QuietHoursInvalid);
+            quietHoursStart ??= new TimeOnly(22, 0);
+            quietHoursEnd ??= new TimeOnly(7, 0);
         }
 
         // Parse digest frequency
-        if (!Enum.TryParse<DigestFrequency>(request.EmailDigestFrequency, true, out DigestFrequency digestFrequency))
+        DigestFrequency digestFrequency = preferences.EmailDigestFrequency;
+        if (request.EmailDigestFrequency is not null &&
+            !Enum.TryParse(request.EmailDigestFrequency, true, out digestFrequency))
         {
             digestFrequency = DigestFrequency.Daily;
         }
 
         // Update preferences
         preferences.UpdateChannelSettings(
-            request.InAppEnabled,
-            request.EmailEnabled,
-            request.PushEnabled,
-            request.SmsEnabled);
+            inAppEnabled,
+            emailEnabled,
+            pushEnabled,
+            smsEnabled);
 
         preferences.UpdateDigestSettings(
-            request.EmailDigestEnabled,
+            emailDigestEnabled,
             digestFrequency,
-            request.EmailDigestTime);
+            emailDigestTime);
 
         preferences.UpdateQuietHours(
-            request.QuietHoursEnabled,
-            request.QuietHoursStart,
-            request.QuietHoursEnd,
-            request.QuietHoursTimezone);
+            quietHoursEnabled,
+            quietHoursStart,
+            quietHoursEnd,
+            quietHoursTimezone);
 
         await unitOfWork.SaveChangesAsync(cancellationToken);
 

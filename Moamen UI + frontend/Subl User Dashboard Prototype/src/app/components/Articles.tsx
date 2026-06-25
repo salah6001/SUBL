@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { ArrowLeft, Clock, User, Tag, Search, ChevronRight, BookOpen } from "lucide-react";
 import { articles as mockArticles } from "../data/mockData";
 import { articlesApi } from "../api/articles";
+import { usePrefs } from "../lib/prefs";
 
 type ArticleItem = (typeof mockArticles)[number];
 
@@ -20,7 +21,8 @@ const categoryColors: Record<string, string> = {
 };
 
 export function Articles() {
-  const [allArticles, setAllArticles] = useState<ArticleItem[]>(mockArticles);
+  const { t } = usePrefs();
+  const [allArticles, setAllArticles] = useState<ArticleItem[]>([]);
   const [selected, setSelected] = useState<ArticleItem | null>(null);
   const [activeCategory, setActiveCategory] = useState("All");
   const [search, setSearch] = useState("");
@@ -38,9 +40,17 @@ export function Articles() {
         excerpt: a.excerpt,
         content: a.content,
       })) as ArticleItem[];
-      if (adapted.length > 0) setAllArticles(adapted);
-    }).catch(() => { /* keep mock data */ });
+      setAllArticles(adapted);
+    }).catch(() => setAllArticles([]));
   }, []);
+
+  // The list endpoint omits the body; fetch the full content when opening one.
+  const openArticle = (article: ArticleItem) => {
+    setSelected(article);
+    articlesApi.getById(String(article.id))
+      .then((full) => setSelected({ ...article, content: full.content }))
+      .catch(() => {});
+  };
 
   const filtered = allArticles.filter((a) => {
     const matchCat = activeCategory === "All" || a.category === activeCategory;
@@ -59,18 +69,12 @@ export function Articles() {
           className="flex items-center gap-2 text-slate-500 dark:text-slate-400 hover:text-blue-600 dark:hover:text-blue-400 text-sm mb-5 transition-colors"
         >
           <ArrowLeft className="w-4 h-4" />
-          Back to Articles
+          {t("articles.back")}
         </button>
 
-        {/* Hero image */}
-        <div className="relative w-full h-56 rounded-2xl overflow-hidden mb-5">
-          <img
-            src={selected.image}
-            alt={selected.title}
-            className="w-full h-full object-cover"
-            loading="lazy"
-          />
-          <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent" />
+        {/* Hero banner — clean gradient, no stock photography */}
+        <div className="relative w-full h-36 rounded-2xl overflow-hidden mb-5 bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center">
+          <BookOpen className="w-10 h-10 text-white/70" />
           <span
             className={`absolute top-3 left-3 px-2.5 py-1 rounded-full text-[11px] ${categoryColors[selected.category] ?? "bg-slate-100 text-slate-700"} backdrop-blur-sm`}
           >
@@ -147,7 +151,7 @@ export function Articles() {
         <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
         <input
           type="text"
-          placeholder="Search articles..."
+          placeholder={t("articles.search")}
           value={search}
           onChange={(e) => setSearch(e.target.value)}
           className="w-full pl-9 pr-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-200 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
@@ -166,38 +170,32 @@ export function Articles() {
                 : "bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-400 border border-slate-200 dark:border-slate-800 hover:border-blue-300 dark:hover:border-blue-700"
             }`}
           >
-            {cat}
+            {cat === "All" ? t("articles.all") : cat}
           </button>
         ))}
       </div>
 
       <p className="text-xs text-slate-400 dark:text-slate-500">
-        {filtered.length} article{filtered.length !== 1 ? "s" : ""}
+        {filtered.length} {filtered.length !== 1 ? t("articles.countPlural") : t("articles.count")}
       </p>
 
       {/* Grid */}
       {filtered.length === 0 ? (
         <div className="text-center py-16 text-slate-400 dark:text-slate-500">
           <BookOpen className="w-10 h-10 mx-auto mb-3 opacity-40" />
-          <p className="text-sm">No articles match your search.</p>
+          <p className="text-sm">{t("articles.none")}</p>
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 w-full">
           {filtered.map((article) => (
             <button
               key={article.id}
-              onClick={() => setSelected(article)}
+              onClick={() => openArticle(article)}
               className="group bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 overflow-hidden hover:shadow-md hover:border-slate-300 dark:hover:border-slate-700 transition-all duration-200 text-left flex flex-col"
             >
-              {/* Image */}
-              <div className="relative h-48 overflow-hidden">
-                <img
-                  src={article.image}
-                  alt={article.title}
-                  className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-                  loading="lazy"
-                />
-                <div className="absolute inset-0 bg-gradient-to-t from-black/30 to-transparent" />
+              {/* Header banner — clean gradient, no stock photography */}
+              <div className="relative h-28 overflow-hidden bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center">
+                <BookOpen className="w-8 h-8 text-white/70" />
                 <span
                   className={`absolute top-3 left-3 px-2 py-0.5 rounded-full text-[10px] backdrop-blur-sm ${
                     categoryColors[article.category] ?? "bg-white/80 text-slate-700"
@@ -230,7 +228,7 @@ export function Articles() {
                     {article.author.split(" ").slice(0, 2).join(" ")}
                   </span>
                   <span className="flex items-center gap-1 text-[11px] text-blue-600 dark:text-blue-400 opacity-0 group-hover:opacity-100 transition-opacity">
-                    Read <ChevronRight className="w-3 h-3" />
+                    {t("articles.read")} <ChevronRight className="w-3 h-3" />
                   </span>
                 </div>
               </div>

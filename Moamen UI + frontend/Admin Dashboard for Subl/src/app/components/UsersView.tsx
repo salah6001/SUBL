@@ -8,14 +8,32 @@ import {
   LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip,
   ResponsiveContainer, ReferenceArea, ReferenceLine,
 } from "recharts";
-import { MOCK_USERS, type User, type UserStatus, type UserDevice } from "../data/mockData";
+import { type User, type UserStatus, type UserDevice } from "../data/mockData";
 import { StatusBadge } from "./shared/StatusBadge";
 import { Pagination } from "./shared/Pagination";
 import { Modal, ConfirmDanger, Field, Input, Select, Textarea } from "./shared/Modal";
 import type { ToastType } from "./shared/Toast";
+import {
+  fetchUsers,
+  createUserWithProfile,
+  updateUser as updateUserApi,
+  deleteUser as deleteUserApi,
+  suspendUser,
+  activateUser,
+  deactivateUser,
+  splitName,
+  DEPARTMENT_LABELS,
+  fetchActiveSessionCount,
+  revokeAllSessions,
+  fetchUserDevices,
+  deleteDevice,
+  revokeDeviceApi,
+  type AdminDeviceDto,
+} from "../lib/users/usersApi";
+import { ApiError, api } from "../lib/apiClient";
 
 const PAGE_SIZE = 8;
-const DEPARTMENTS = ["Engineering", "Sales", "Customer Support", "Product", "Human Resources", "Finance", "Marketing", "Legal"];
+const DEPARTMENTS = DEPARTMENT_LABELS;
 const COLORS = ["from-blue-500 to-blue-700", "from-purple-500 to-purple-700", "from-emerald-500 to-teal-600", "from-red-500 to-rose-600", "from-amber-500 to-orange-600", "from-cyan-500 to-blue-600", "from-pink-500 to-rose-500", "from-indigo-500 to-violet-600", "from-green-500 to-emerald-600", "from-teal-500 to-cyan-600"];
 
 interface Props {
@@ -160,7 +178,7 @@ function EditUserModal({ user, isOpen, onClose, onSave }: EditModalProps) {
         <div className="col-span-2">
           <Field label="Account Status">
             <div className="flex items-center gap-3">
-              {(["Active", "Inactive", "Suspended"] as UserStatus[]).map(s => (
+              {(["Active", "Suspended"] as UserStatus[]).map(s => (
                 <label key={s} className="flex items-center gap-2 cursor-pointer">
                   <input type="radio" name="status" value={s} checked={form.status === s} onChange={() => f("status", s)} className="accent-blue-600" />
                   <span className="text-slate-600 dark:text-slate-300" style={{ fontSize: "0.875rem" }}>{s}</span>
@@ -207,17 +225,14 @@ function SuspendUserModal({ user, isOpen, onClose, onConfirm }: SuspendModalProp
           <div className="flex items-start gap-3 p-4 bg-amber-50 dark:bg-amber-900/20 rounded-xl border border-amber-100 dark:border-amber-900/40">
             <AlertTriangle size={16} className="text-amber-500 mt-0.5 flex-shrink-0" />
             <p className="text-amber-700 dark:text-amber-300" style={{ fontSize: "0.82rem", lineHeight: 1.6 }}>
-              Suspending <strong>{user.name}</strong> will immediately revoke all active sessions and block login. This action is logged in the Audit Trail.
+              Suspending <strong>{user.name}</strong> will immediately revoke all active sessions and block login.
             </p>
           </div>
-          <Field label="Reason for Suspension" required>
-            <Textarea value={reason} onChange={e => setReason(e.target.value)} rows={3} placeholder="Describe the reason for suspension (required for audit compliance)…" />
-          </Field>
         </div>
       ) : (
         <div className="p-4 bg-green-50 dark:bg-green-900/20 rounded-xl border border-green-100 dark:border-green-900/40">
           <p className="text-green-700 dark:text-green-300" style={{ fontSize: "0.85rem", lineHeight: 1.6 }}>
-            This will restore <strong>{user.name}</strong>'s access. They will be able to log in immediately. An entry will be created in the Audit Log.
+            This will restore <strong>{user.name}</strong>'s access. They will be able to log in immediately.
           </p>
         </div>
       )}
@@ -228,11 +243,11 @@ function SuspendUserModal({ user, isOpen, onClose, onConfirm }: SuspendModalProp
 interface AddUserModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onSave: (user: User) => void;
+  onSave: (data: { name: string; email: string; password: string; primaryRole: string; department: string; phone: string }) => void | Promise<void>;
 }
 
 function AddUserModal({ isOpen, onClose, onSave }: AddUserModalProps) {
-  const [form, setForm] = useState({ name: "", email: "", primaryRole: "", department: "", phone: "", location: "" });
+  const [form, setForm] = useState({ name: "", email: "", password: "", primaryRole: "", department: "", phone: "", location: "" });
   const [errors, setErrors] = useState<Record<string, string>>({});
 
   function validate() {
@@ -240,25 +255,16 @@ function AddUserModal({ isOpen, onClose, onSave }: AddUserModalProps) {
     if (!form.name.trim()) e.name = "Name is required";
     if (!form.email.trim()) e.email = "Email is required";
     else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email)) e.email = "Invalid email";
-    if (!form.primaryRole.trim()) e.primaryRole = "Role is required";
-    if (!form.department) e.department = "Department is required";
+    if (!form.password.trim()) e.password = "Password is required";
+    else if (form.password.length < 8) e.password = "At least 8 characters";
     setErrors(e);
     return Object.keys(e).length === 0;
   }
 
   function handleSave() {
     if (!validate()) return;
-    const initials = form.name.split(" ").map(w => w[0]).slice(0, 2).join("").toUpperCase();
-    const color = COLORS[Math.floor(form.name.length % COLORS.length)];
-    const now = new Date("2026-05-25").toISOString().split("T")[0];
-    const newUser: User = {
-      id: `u-${Date.now()}`, ...form, status: "Active",
-      lastLogin: "Never", createdAt: now, initials, color,
-      activeSessions: 0, stressHistory: [], devices: [],
-      assignedRoles: [{ id: "r5", name: "Viewer", assignedAt: now }],
-    };
-    onSave(newUser);
-    setForm({ name: "", email: "", primaryRole: "", department: "", phone: "", location: "" });
+    void onSave({ name: form.name, email: form.email, password: form.password, primaryRole: form.primaryRole, department: form.department, phone: form.phone });
+    setForm({ name: "", email: "", password: "", primaryRole: "", department: "", phone: "", location: "" });
     setErrors({});
   }
 
@@ -277,7 +283,8 @@ function AddUserModal({ isOpen, onClose, onSave }: AddUserModalProps) {
       <div className="grid grid-cols-2 gap-4">
         <div className="col-span-2 sm:col-span-1"><Field label="Full Name" required error={errors.name}><Input value={form.name} onChange={e => f("name", e.target.value)} placeholder="Full name" /></Field></div>
         <div className="col-span-2 sm:col-span-1"><Field label="Work Email" required error={errors.email}><Input type="email" value={form.email} onChange={e => f("email", e.target.value)} placeholder="email@company.io" /></Field></div>
-        <div className="col-span-2 sm:col-span-1"><Field label="Job Role" required error={errors.primaryRole}><Input value={form.primaryRole} onChange={e => f("primaryRole", e.target.value)} placeholder="e.g. Senior Engineer" /></Field></div>
+        <div className="col-span-2 sm:col-span-1"><Field label="Temporary Password" required error={errors.password}><Input type="password" value={form.password} onChange={e => f("password", e.target.value)} placeholder="Min 8 characters" /></Field></div>
+        <div className="col-span-2 sm:col-span-1"><Field label="Job Role" error={errors.primaryRole}><Input value={form.primaryRole} onChange={e => f("primaryRole", e.target.value)} placeholder="e.g. Senior Engineer" /></Field></div>
         <div className="col-span-2 sm:col-span-1">
           <Field label="Department" required error={errors.department}>
             <Select value={form.department} onChange={e => f("department", e.target.value)}>
@@ -307,14 +314,50 @@ function UserDetail({ user, allUsers, onBack, onUpdateUser, onDeleteUser, showTo
   const [suspendOpen, setSuspendOpen] = useState(false);
   const [revokeOpen, setRevokeOpen] = useState(false);
   const [deleteOpen, setDeleteOpen] = useState(false);
-  const [devices, setDevices] = useState<UserDevice[]>(user.devices);
 
-  const avgStress = user.stressHistory.length
-    ? Math.round(user.stressHistory.reduce((s, p) => s + p.score, 0) / user.stressHistory.length)
+  // Real enrolled devices + active session count for this user (no mock data).
+  const [devices, setDevices] = useState<AdminDeviceDto[]>([]);
+  const [activeSessions, setActiveSessions] = useState(0);
+
+  const reloadDevices = () => { fetchUserDevices(user.id).then(setDevices).catch(() => setDevices([])); };
+  useEffect(() => {
+    reloadDevices();
+    fetchActiveSessionCount(user.id).then(setActiveSessions).catch(() => setActiveSessions(0));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user.id]);
+
+  const [realStressHistory, setRealStressHistory] = useState<{date: string; score: number}[]>([]);
+  const [stressLoading, setStressLoading] = useState(true);
+
+  useEffect(() => {
+    let cancelled = false;
+    setStressLoading(true);
+    const to = new Date();
+    const from = new Date(to.getTime() - 30 * 24 * 60 * 60 * 1000);
+    api.get<{ bucketStart: string; averageScore: number }[]>(
+      `admin/users/${user.id}/stress-trends`,
+      { params: { from: from.toISOString(), to: to.toISOString(), granularity: 'Day' } }
+    )
+      .then(data => {
+        if (cancelled) return;
+        setRealStressHistory(
+          data.map(p => ({
+            date: p.bucketStart.slice(0, 10),
+            score: Math.round(p.averageScore * 100),
+          }))
+        );
+      })
+      .catch(() => {}) // falls back to user.stressHistory
+      .finally(() => { if (!cancelled) setStressLoading(false); });
+    return () => { cancelled = true; };
+  }, [user.id]);
+
+  const sourceHistory = realStressHistory.length > 0 ? realStressHistory : user.stressHistory;
+  const avgStress = sourceHistory.length
+    ? Math.round(sourceHistory.reduce((s, p) => s + p.score, 0) / sourceHistory.length)
     : 0;
-  const maxStress = user.stressHistory.length ? Math.max(...user.stressHistory.map(p => p.score)) : 0;
-
-  const chartData = user.stressHistory.map((p, i) => ({
+  const maxStress = sourceHistory.length ? Math.max(...sourceHistory.map(p => p.score)) : 0;
+  const chartData = sourceHistory.map((p, i) => ({
     ...p,
     displayDate: i % 5 === 0 ? p.date.slice(5) : "",
   }));
@@ -322,9 +365,30 @@ function UserDetail({ user, allUsers, onBack, onUpdateUser, onDeleteUser, showTo
   const stressColor = avgStress >= 80 ? "#dc2626" : avgStress >= 60 ? "#f97316" : avgStress >= 30 ? "#f59e0b" : "#22c55e";
   const stressLabel = avgStress >= 80 ? "Critical" : avgStress >= 60 ? "High" : avgStress >= 30 ? "Moderate" : "Low";
 
-  function revokeDevice(deviceId: string) {
-    setDevices(prev => prev.map(d => d.id === deviceId ? { ...d, status: "Revoked" } : d));
-    showToast("Device access revoked successfully", "success");
+  // Derives the display status for an enrolled device.
+  function deviceStatus(d: AdminDeviceDto): "Active" | "Revoked" | "Idle" {
+    if (d.revokedAt || !d.isActive) return "Revoked";
+    return d.isOnline ? "Active" : "Idle";
+  }
+
+  async function revokeDevice(deviceId: string) {
+    try {
+      await revokeDeviceApi(deviceId);
+      reloadDevices();
+      showToast("Device access revoked successfully", "success");
+    } catch (err) {
+      showToast(err instanceof ApiError ? err.displayMessage : "Couldn't revoke device", "error");
+    }
+  }
+
+  async function removeDevice(deviceId: string) {
+    try {
+      await deleteDevice(deviceId);
+      setDevices(prev => prev.filter(d => d.id !== deviceId));
+      showToast("Device permanently removed", "success");
+    } catch (err) {
+      showToast(err instanceof ApiError ? err.displayMessage : "Couldn't delete device", "error");
+    }
   }
 
   return (
@@ -379,7 +443,7 @@ function UserDetail({ user, allUsers, onBack, onUpdateUser, onDeleteUser, showTo
             <button onClick={() => setRevokeOpen(true)}
               className="flex items-center gap-2 px-4 py-2 rounded-xl border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors"
               style={{ fontSize: "0.82rem", fontWeight: 500 }}>
-              <LogOut size={14} /> Revoke Sessions ({user.activeSessions})
+              <LogOut size={14} /> Revoke Sessions ({activeSessions})
             </button>
             <button onClick={() => setDeleteOpen(true)}
               className="flex items-center gap-2 px-4 py-2 rounded-xl border border-red-200 dark:border-red-900/50 text-red-500 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
@@ -394,8 +458,8 @@ function UserDetail({ user, allUsers, onBack, onUpdateUser, onDeleteUser, showTo
         {[
           { label: "Avg Stress Score", value: `${avgStress}`, unit: "/100", color: stressColor, sub: stressLabel },
           { label: "Peak Stress (30d)", value: `${maxStress}`, unit: "/100", color: maxStress >= 80 ? "#dc2626" : "#f97316", sub: "Highest recorded" },
-          { label: "Active Sessions", value: `${user.activeSessions}`, unit: "", color: "#3b82f6", sub: "Current sessions" },
-          { label: "Enrolled Devices", value: `${devices.length}`, unit: "", color: "#8b5cf6", sub: `${devices.filter(d => d.status === "Active").length} active` },
+          { label: "Active Sessions", value: `${activeSessions}`, unit: "", color: "#3b82f6", sub: "Current sessions" },
+          { label: "Enrolled Devices", value: `${devices.length}`, unit: "", color: "#8b5cf6", sub: `${devices.filter(d => deviceStatus(d) === "Active").length} active` },
         ].map(s => (
           <div key={s.label} className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-100 dark:border-slate-800 shadow-sm p-5">
             <p className="text-slate-500 dark:text-slate-400 mb-1" style={{ fontSize: "0.75rem" }}>{s.label}</p>
@@ -422,7 +486,11 @@ function UserDetail({ user, allUsers, onBack, onUpdateUser, onDeleteUser, showTo
             ))}
           </div>
         </div>
-        {user.stressHistory.length > 0 ? (
+        {stressLoading && realStressHistory.length === 0 ? (
+          <div className="h-48 flex items-center justify-center">
+            <span className="w-6 h-6 border-2 border-blue-200 border-t-blue-600 rounded-full animate-spin" />
+          </div>
+        ) : (realStressHistory.length > 0 || user.stressHistory.length > 0) ? (
           <ResponsiveContainer width="100%" height={220}>
             <LineChart data={chartData} margin={{ top: 4, right: 16, left: -10, bottom: 0 }}>
               <ReferenceArea key="ra-low" id="ra-low" y1={0} y2={30} fill="#22c55e" fillOpacity={0.05} />
@@ -446,36 +514,7 @@ function UserDetail({ user, allUsers, onBack, onUpdateUser, onDeleteUser, showTo
         )}
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-5 mb-5">
-        <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-100 dark:border-slate-800 shadow-sm overflow-hidden">
-          <div className="flex items-center justify-between px-5 py-4 border-b border-slate-100 dark:border-slate-800">
-            <h3 className="text-slate-800 dark:text-slate-100" style={{ fontSize: "0.9rem", fontWeight: 700 }}>Assigned Roles</h3>
-            <span className="px-2.5 py-1 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300" style={{ fontSize: "0.72rem", fontWeight: 600 }}>{user.assignedRoles.length} roles</span>
-          </div>
-          {user.assignedRoles.length === 0 ? (
-            <div className="p-6 text-center text-slate-400 dark:text-slate-500" style={{ fontSize: "0.82rem" }}>No roles assigned</div>
-          ) : (
-            <table className="w-full">
-              <thead><tr className="bg-slate-50 dark:bg-slate-800/50 border-b border-slate-100 dark:border-slate-800">
-                {["Role", "Assigned"].map(h => <th key={h} className="text-left px-5 py-3" style={{ fontSize: "0.65rem", fontWeight: 700, color: "#94a3b8", textTransform: "uppercase", letterSpacing: "0.08em" }}>{h}</th>)}
-              </tr></thead>
-              <tbody className="divide-y divide-slate-50 dark:divide-slate-800">
-                {user.assignedRoles.map(r => (
-                  <tr key={r.id} className="hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors">
-                    <td className="px-5 py-3">
-                      <div className="flex items-center gap-2">
-                        <div className="w-7 h-7 rounded-lg bg-blue-50 dark:bg-blue-900/30 flex items-center justify-center"><Shield size={13} className="text-blue-500 dark:text-blue-400" /></div>
-                        <span className="text-slate-700 dark:text-slate-200" style={{ fontSize: "0.82rem", fontWeight: 600 }}>{r.name}</span>
-                      </div>
-                    </td>
-                    <td className="px-5 py-3 text-slate-500 dark:text-slate-400" style={{ fontSize: "0.78rem" }}>{r.assignedAt}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          )}
-        </div>
-
+      <div className="mb-5">
         <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-100 dark:border-slate-800 shadow-sm overflow-hidden">
           <div className="flex items-center justify-between px-5 py-4 border-b border-slate-100 dark:border-slate-800">
             <h3 className="text-slate-800 dark:text-slate-100" style={{ fontSize: "0.9rem", fontWeight: 700 }}>Enrolled Devices</h3>
@@ -489,28 +528,38 @@ function UserDetail({ user, allUsers, onBack, onUpdateUser, onDeleteUser, showTo
                 {["Device", "OS", "Status", ""].map(h => <th key={h} className="text-left px-4 py-3" style={{ fontSize: "0.65rem", fontWeight: 700, color: "#94a3b8", textTransform: "uppercase", letterSpacing: "0.08em" }}>{h}</th>)}
               </tr></thead>
               <tbody className="divide-y divide-slate-50 dark:divide-slate-800">
-                {devices.map(dev => (
+                {devices.map(dev => {
+                  const status = deviceStatus(dev);
+                  return (
                   <tr key={dev.id} className="hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors">
                     <td className="px-4 py-3">
                       <div className="flex items-center gap-2">
                         <Monitor size={13} className="text-slate-400 dark:text-slate-500" />
-                        <span className="text-slate-700 dark:text-slate-200" style={{ fontSize: "0.78rem", fontWeight: 500 }}>{dev.name}</span>
+                        <span className="text-slate-700 dark:text-slate-200" style={{ fontSize: "0.78rem", fontWeight: 500 }}>{dev.deviceName}</span>
                       </div>
-                      <p className="text-slate-400 dark:text-slate-500 ml-5" style={{ fontSize: "0.7rem" }}>{dev.ip}</p>
+                      <p className="text-slate-400 dark:text-slate-500 ml-5" style={{ fontSize: "0.7rem" }}>{dev.lastIpAddress ?? "—"}</p>
                     </td>
-                    <td className="px-4 py-3 text-slate-500 dark:text-slate-400" style={{ fontSize: "0.75rem" }}>{dev.os}</td>
-                    <td className="px-4 py-3"><StatusBadge status={dev.status} size="sm" /></td>
+                    <td className="px-4 py-3 text-slate-500 dark:text-slate-400" style={{ fontSize: "0.75rem" }}>{dev.osVersion ?? dev.platform}</td>
+                    <td className="px-4 py-3"><StatusBadge status={status} size="sm" /></td>
                     <td className="px-4 py-3">
-                      {dev.status === "Active" && (
-                        <button onClick={() => revokeDevice(dev.id)}
+                      {status === "Revoked" ? (
+                        <button onClick={() => removeDevice(dev.id)}
+                          title="Permanently delete this device"
                           className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg border border-red-200 dark:border-red-900/50 text-red-500 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
+                          style={{ fontSize: "0.72rem", fontWeight: 600 }}>
+                          <Trash2 size={11} /> Delete
+                        </button>
+                      ) : (
+                        <button onClick={() => revokeDevice(dev.id)}
+                          className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg border border-amber-200 dark:border-amber-900/50 text-amber-600 dark:text-amber-400 hover:bg-amber-50 dark:hover:bg-amber-900/20 transition-colors"
                           style={{ fontSize: "0.72rem", fontWeight: 600 }}>
                           <X size={11} /> Revoke
                         </button>
                       )}
                     </td>
                   </tr>
-                ))}
+                  );
+                })}
               </tbody>
             </table>
           )}
@@ -530,12 +579,17 @@ function UserDetail({ user, allUsers, onBack, onUpdateUser, onDeleteUser, showTo
 
       <ConfirmDanger isOpen={revokeOpen} onClose={() => setRevokeOpen(false)}
         title="Revoke All Sessions"
-        description={`This will immediately terminate all ${user.activeSessions} active session(s) for ${user.name}. They will be logged out across all devices.`}
+        description={`This will immediately terminate all ${activeSessions} active session(s) for ${user.name}. They will be logged out across all devices.`}
         confirmLabel="Revoke All Sessions"
-        onConfirm={() => {
-          onUpdateUser({ ...user, activeSessions: 0 });
+        onConfirm={async () => {
           setRevokeOpen(false);
-          showToast("All sessions revoked successfully", "success");
+          try {
+            await revokeAllSessions(user.id);
+            setActiveSessions(0);
+            showToast("All sessions revoked successfully", "success");
+          } catch (err) {
+            showToast(err instanceof ApiError ? err.displayMessage : "Couldn't revoke sessions", "error");
+          }
         }} />
 
       <ConfirmDanger isOpen={deleteOpen} onClose={() => setDeleteOpen(false)}
@@ -553,7 +607,9 @@ function UserDetail({ user, allUsers, onBack, onUpdateUser, onDeleteUser, showTo
 }
 
 export function UsersView({ showToast }: Props) {
-  const [users, setUsers] = useState<User[]>(MOCK_USERS);
+  const [users, setUsers] = useState<User[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState<string | null>(null);
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<"All" | UserStatus>("All");
@@ -564,17 +620,46 @@ export function UsersView({ showToast }: Props) {
   const [suspendTarget, setSuspendTarget] = useState<User | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<User | null>(null);
 
-  function updateUser(updated: User) {
-    setUsers(prev => prev.map(u => u.id === updated.id ? updated : u));
-    if (selectedUser?.id === updated.id) setSelectedUser(updated);
+  async function reload() {
+    try {
+      setUsers(await fetchUsers());
+    } catch (err) {
+      setLoadError(err instanceof ApiError ? err.displayMessage : "Couldn't load users.");
+    } finally {
+      setLoading(false);
+    }
   }
 
-  function deleteUser(id: string) {
-    setUsers(prev => prev.filter(u => u.id !== id));
+  useEffect(() => { void reload(); }, []);
+
+  // Calls the right backend endpoint to move a user to a target status.
+  async function applyStatus(id: string, status: UserStatus) {
+    if (status === "Suspended") await suspendUser(id);
+    else if (status === "Inactive") await deactivateUser(id);
+    else await activateUser(id);
+  }
+
+  // Edit: update name/email, plus status if it changed.
+  async function updateUser(updated: User) {
+    const original = users.find(u => u.id === updated.id);
+    const { firstName, lastName } = splitName(updated.name);
+    await updateUserApi(updated.id, { firstName, lastName, email: updated.email });
+    if (original && original.status !== updated.status) {
+      await applyStatus(updated.id, updated.status);
+    }
+    await reload();
+    if (selectedUser?.id === updated.id) {
+      setSelectedUser(prev => prev ? { ...prev, ...updated } : prev);
+    }
+  }
+
+  async function deleteUser(id: string) {
+    await deleteUserApi(id);
+    await reload();
     if (selectedUser?.id === id) setSelectedUser(null);
   }
 
-  const departments = useMemo(() => ["All", ...Array.from(new Set(MOCK_USERS.map(u => u.department))).sort()], []);
+  const departments = useMemo(() => ["All", ...Array.from(new Set(users.map(u => u.department))).sort()], [users]);
 
   const filtered = useMemo(() => {
     let list = [...users];
@@ -624,7 +709,7 @@ export function UsersView({ showToast }: Props) {
       </div>
 
       <div className="flex items-center gap-2 flex-wrap mb-5">
-        {(["All", "Active", "Inactive", "Suspended"] as const).map(s => (
+        {(["All", "Active", "Suspended"] as const).map(s => (
           <button key={s} onClick={() => { setStatusFilter(s); setCurrentPage(1); }}
             className={`px-4 py-2 rounded-xl transition-all ${statusFilter === s ? "bg-blue-600 text-white shadow-sm shadow-blue-200" : "bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:border-blue-200 dark:hover:border-blue-700 hover:text-blue-600 dark:hover:text-blue-400"}`}
             style={{ fontSize: "0.82rem", fontWeight: statusFilter === s ? 600 : 400 }}>
@@ -656,6 +741,17 @@ export function UsersView({ showToast }: Props) {
         <p className="text-slate-400 dark:text-slate-500 mt-2" style={{ fontSize: "0.72rem" }}>{filtered.length} of {users.length} users shown</p>
       </div>
 
+      {loading && (
+        <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-100 dark:border-slate-800 shadow-sm p-16 flex items-center justify-center">
+          <span className="w-7 h-7 border-2 border-blue-200 border-t-blue-600 rounded-full animate-spin" />
+        </div>
+      )}
+      {!loading && loadError && (
+        <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-100 dark:border-slate-800 shadow-sm p-10 text-center">
+          <p className="text-red-500" style={{ fontSize: "0.875rem" }}>{loadError}</p>
+        </div>
+      )}
+      {!loading && !loadError && (
       <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-100 dark:border-slate-800 shadow-sm overflow-hidden">
         <div className="hidden md:block overflow-x-auto">
           <table className="w-full">
@@ -728,31 +824,66 @@ export function UsersView({ showToast }: Props) {
 
         <Pagination total={filtered.length} pageSize={PAGE_SIZE} currentPage={currentPage} onPageChange={setCurrentPage} />
       </div>
+      )}
 
       {editTarget && (
         <EditUserModal user={editTarget} isOpen={true} onClose={() => setEditTarget(null)}
-          onSave={u => { updateUser(u); setEditTarget(null); showToast(`${u.name} updated successfully`, "success"); }} />
+          onSave={async u => {
+            try {
+              await updateUser(u);
+              setEditTarget(null);
+              showToast(`${u.name} updated successfully`, "success");
+            } catch (err) {
+              showToast(err instanceof ApiError ? err.displayMessage : "Couldn't update user", "error");
+            }
+          }} />
       )}
       {suspendTarget && (
         <SuspendUserModal user={suspendTarget} isOpen={true} onClose={() => setSuspendTarget(null)}
-          onConfirm={() => {
-            const ns: UserStatus = suspendTarget.status === "Suspended" ? "Active" : "Suspended";
-            updateUser({ ...suspendTarget, status: ns });
+          onConfirm={async () => {
+            const target = suspendTarget;
+            const ns: UserStatus = target.status === "Suspended" ? "Active" : "Suspended";
             setSuspendTarget(null);
-            showToast(ns === "Suspended" ? `${suspendTarget.name} suspended` : `${suspendTarget.name} restored`, ns === "Suspended" ? "warning" : "success");
+            try {
+              await applyStatus(target.id, ns);
+              await reload();
+              showToast(ns === "Suspended" ? `${target.name} suspended` : `${target.name} restored`, ns === "Suspended" ? "warning" : "success");
+            } catch (err) {
+              showToast(err instanceof ApiError ? err.displayMessage : "Couldn't change status", "error");
+            }
           }} />
       )}
       <ConfirmDanger isOpen={!!deleteTarget} onClose={() => setDeleteTarget(null)}
         title="Delete User Account"
         description={`Permanently delete ${deleteTarget?.name}'s account? This cannot be undone.`}
         confirmLabel="Delete Permanently"
-        onConfirm={() => {
-          if (deleteTarget) { deleteUser(deleteTarget.id); showToast(`${deleteTarget.name} deleted`, "error"); }
+        onConfirm={async () => {
+          const target = deleteTarget;
           setDeleteTarget(null);
+          if (!target) return;
+          try {
+            await deleteUser(target.id);
+            showToast(`${target.name} deleted`, "error");
+          } catch (err) {
+            showToast(err instanceof ApiError ? err.displayMessage : "Couldn't delete user", "error");
+          }
         }} />
 
       <AddUserModal isOpen={addOpen} onClose={() => setAddOpen(false)}
-        onSave={u => { setUsers(prev => [u, ...prev]); setAddOpen(false); showToast(`${u.name} created successfully`, "success"); }} />
+        onSave={async data => {
+          const { firstName, lastName } = splitName(data.name);
+          try {
+            await createUserWithProfile({
+              email: data.email, firstName, lastName, password: data.password,
+              department: data.department, jobTitle: data.primaryRole, phone: data.phone,
+            });
+            await reload();
+            setAddOpen(false);
+            showToast(`${data.name} created successfully`, "success");
+          } catch (err) {
+            showToast(err instanceof ApiError ? err.displayMessage : "Couldn't create user", "error");
+          }
+        }} />
     </div>
   );
 }

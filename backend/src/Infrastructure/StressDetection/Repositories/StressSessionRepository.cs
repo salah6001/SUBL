@@ -35,6 +35,15 @@ internal sealed class StressSessionRepository(ApplicationDbContext context) : IS
             .OrderByDescending(s => s.StartedAt)
             .FirstOrDefaultAsync(cancellationToken);
 
+    public Task<StressSession?> GetActiveForDeviceAsync(
+        Guid deviceId,
+        CancellationToken cancellationToken = default) =>
+        context.StressSessions
+            .Where(s => s.DeviceId == deviceId &&
+                (s.Status == SessionStatus.Active || s.Status == SessionStatus.Paused))
+            .OrderByDescending(s => s.StartedAt)
+            .FirstOrDefaultAsync(cancellationToken);
+
     public async Task<(List<StressSession> Items, int TotalCount)> GetPaginatedAsync(
         Guid userId,
         int page,

@@ -1,8 +1,8 @@
 import { useState, useRef, useEffect } from "react";
 import {
-  Bell, Search, Menu, ChevronDown, Sun, Moon, Check,
+  Bell, Menu, ChevronDown, Sun, Moon, Check,
   Trash2, AlertTriangle, Info, AlertCircle, Zap,
-  User, LogOut, Settings, Edit3, X,
+  LogOut, Settings, Building2,
 } from "lucide-react";
 import type { AppNotification, NotificationType } from "../data/mockData";
 
@@ -14,7 +14,8 @@ interface HeaderProps {
   onMarkAllRead: () => void;
   onClearAll: () => void;
   adminUser: { name: string; email: string };
-  onUpdateAdmin: (name: string, email: string) => void;
+  company?: string;
+  onOpenSettings: () => void;
   onLogout: () => void;
 }
 
@@ -49,98 +50,6 @@ function formatTime(ts: string): string {
   return `${Math.floor(diffHrs / 24)}d ago`;
 }
 
-function EditProfileModal({
-  adminUser,
-  onSave,
-  onClose,
-}: {
-  adminUser: { name: string; email: string };
-  onSave: (name: string, email: string) => void;
-  onClose: () => void;
-}) {
-  const [name, setName] = useState(adminUser.name);
-  const [email, setEmail] = useState(adminUser.email);
-
-  return (
-    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
-      <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={onClose} />
-      <div className="relative bg-white dark:bg-slate-900 rounded-2xl shadow-2xl w-full max-w-md border border-slate-200 dark:border-slate-700 z-10">
-        <div className="flex items-center justify-between px-6 py-5 border-b border-slate-100 dark:border-slate-800">
-          <div className="flex items-center gap-3">
-            <div className="w-9 h-9 rounded-xl bg-blue-100 dark:bg-blue-900/40 flex items-center justify-center">
-              <Edit3 size={16} className="text-blue-600 dark:text-blue-400" />
-            </div>
-            <div>
-              <h3 className="text-slate-800 dark:text-slate-100" style={{ fontWeight: 700, fontSize: "0.95rem" }}>Edit Profile</h3>
-              <p className="text-slate-400 dark:text-slate-500" style={{ fontSize: "0.75rem" }}>Update your admin account details</p>
-            </div>
-          </div>
-          <button onClick={onClose} className="p-1.5 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-400 dark:text-slate-500 transition-colors">
-            <X size={16} />
-          </button>
-        </div>
-
-        <div className="px-6 py-5 space-y-4">
-          <div className="flex items-center justify-center mb-2">
-            <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-blue-500 to-blue-700 flex items-center justify-center shadow-lg">
-              <span className="text-white" style={{ fontSize: "1.1rem", fontWeight: 700 }}>
-                {name.split(" ").map(p => p[0]).join("").slice(0, 2).toUpperCase()}
-              </span>
-            </div>
-          </div>
-          <div>
-            <label className="block text-slate-600 dark:text-slate-400 mb-1.5" style={{ fontSize: "0.78rem", fontWeight: 600 }}>Display Name</label>
-            <input
-              type="text"
-              value={name}
-              onChange={e => setName(e.target.value)}
-              className="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
-              style={{ fontSize: "0.875rem" }}
-            />
-          </div>
-          <div>
-            <label className="block text-slate-600 dark:text-slate-400 mb-1.5" style={{ fontSize: "0.78rem", fontWeight: 600 }}>Email Address</label>
-            <input
-              type="email"
-              value={email}
-              onChange={e => setEmail(e.target.value)}
-              className="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
-              style={{ fontSize: "0.875rem" }}
-            />
-          </div>
-          <div>
-            <label className="block text-slate-600 dark:text-slate-400 mb-1.5" style={{ fontSize: "0.78rem", fontWeight: 600 }}>Role</label>
-            <input
-              type="text"
-              value="Super Admin"
-              disabled
-              className="w-full px-3.5 py-2.5 rounded-xl bg-slate-100 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 text-slate-400 dark:text-slate-500 cursor-not-allowed"
-              style={{ fontSize: "0.875rem" }}
-            />
-          </div>
-        </div>
-
-        <div className="px-6 pb-5 flex gap-3">
-          <button
-            onClick={onClose}
-            className="flex-1 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors"
-            style={{ fontSize: "0.875rem", fontWeight: 500 }}
-          >
-            Cancel
-          </button>
-          <button
-            onClick={() => { onSave(name, email); onClose(); }}
-            className="flex-1 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-500 text-white transition-colors"
-            style={{ fontSize: "0.875rem", fontWeight: 600 }}
-          >
-            Save Changes
-          </button>
-        </div>
-      </div>
-    </div>
-  );
-}
-
 export function Header({
   onMenuClick,
   theme,
@@ -149,12 +58,12 @@ export function Header({
   onMarkAllRead = () => {},
   onClearAll = () => {},
   adminUser = { name: "Admin User", email: "admin@subl.io" },
-  onUpdateAdmin = () => {},
+  company = "",
+  onOpenSettings = () => {},
   onLogout = () => {},
 }: HeaderProps) {
   const [notifOpen, setNotifOpen] = useState(false);
   const [profileOpen, setProfileOpen] = useState(false);
-  const [editProfileOpen, setEditProfileOpen] = useState(false);
 
   const notifRef = useRef<HTMLDivElement>(null);
   const profileRef = useRef<HTMLDivElement>(null);
@@ -167,6 +76,14 @@ export function Header({
   const today = new Date().toLocaleDateString("en-US", {
     weekday: "long", year: "numeric", month: "long", day: "numeric",
   });
+
+  const greeting = (() => {
+    const h = new Date().getHours();
+    if (h < 12) return "Good morning";
+    if (h < 17) return "Good afternoon";
+    if (h < 21) return "Good evening";
+    return "Good night";
+  })();
 
   const initials = adminUser.name.split(" ").map(p => p[0]).join("").slice(0, 2).toUpperCase();
 
@@ -183,25 +100,20 @@ export function Header({
               <Menu size={22} />
             </button>
             <div>
-              <h1 className="text-slate-800 dark:text-slate-100" style={{ fontSize: "1.05rem", fontWeight: 600, lineHeight: 1.2 }}>
-                Good morning, {adminUser.name.split(" ")[0]} 👋
-              </h1>
+              <div className="flex items-center gap-2.5">
+                <h1 className="text-slate-800 dark:text-slate-100" style={{ fontSize: "1.05rem", fontWeight: 600, lineHeight: 1.2 }}>
+                  {greeting}, {adminUser.name.split(" ")[0]} 👋
+                </h1>
+                {company && (
+                  <span className="hidden md:inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-blue-50 dark:bg-blue-950/40 text-blue-700 dark:text-blue-300 max-w-[220px]" style={{ fontSize: "0.7rem", fontWeight: 600 }}>
+                    <Building2 size={12} className="shrink-0" />
+                    <span className="truncate">{company}</span>
+                  </span>
+                )}
+              </div>
               <p className="text-slate-400 dark:text-slate-500 hidden sm:block" style={{ fontSize: "0.78rem" }}>
                 {today}
               </p>
-            </div>
-          </div>
-
-          {/* Center: Search */}
-          <div className="hidden md:flex flex-1 max-w-sm mx-4">
-            <div className="relative w-full">
-              <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 dark:text-slate-500" />
-              <input
-                type="text"
-                placeholder="Search employees, teams..."
-                className="w-full pl-9 pr-4 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-slate-700 dark:text-slate-300 placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-200 dark:focus:ring-blue-900 focus:border-blue-400 dark:focus:border-blue-600 transition-all"
-                style={{ fontSize: "0.85rem" }}
-              />
             </div>
           </div>
 
@@ -339,14 +251,7 @@ export function Header({
                   {/* Menu items */}
                   <div className="p-1.5 space-y-0.5">
                     <button
-                      onClick={() => { setProfileOpen(false); setEditProfileOpen(true); }}
-                      className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors text-left"
-                      style={{ fontSize: "0.83rem" }}
-                    >
-                      <User size={15} className="text-slate-400 dark:text-slate-500" />
-                      Edit Profile
-                    </button>
-                    <button
+                      onClick={() => { setProfileOpen(false); onOpenSettings(); }}
                       className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors text-left"
                       style={{ fontSize: "0.83rem" }}
                     >
@@ -371,14 +276,6 @@ export function Header({
           </div>
         </div>
       </header>
-
-      {editProfileOpen && (
-        <EditProfileModal
-          adminUser={adminUser}
-          onSave={onUpdateAdmin}
-          onClose={() => setEditProfileOpen(false)}
-        />
-      )}
     </>
   );
 }

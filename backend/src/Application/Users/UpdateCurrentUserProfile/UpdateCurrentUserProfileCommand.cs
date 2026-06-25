@@ -10,5 +10,6 @@ public sealed record UpdateCurrentUserProfileCommand(
     string? PhoneNumber,
     string? AvatarUrl,
     string? Bio,
-    IReadOnlyList<string>? Skills) : ICommand;
+    IReadOnlyList<string>? Skills,
+    string? DisplayJobTitle = null) : ICommand;
 #pragma warning restore CA1054

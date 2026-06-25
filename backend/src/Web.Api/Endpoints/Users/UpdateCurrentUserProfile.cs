@@ -15,7 +15,8 @@ internal sealed class UpdateCurrentUserProfile : IEndpoint
         string? PhoneNumber,
         string? AvatarUrl,
         string? Bio,
-        IReadOnlyList<string>? Skills);
+        IReadOnlyList<string>? Skills,
+        string? DisplayJobTitle);
 
     public void MapEndpoint(IEndpointRouteBuilder app)
     {
@@ -28,7 +29,8 @@ internal sealed class UpdateCurrentUserProfile : IEndpoint
                 request.PhoneNumber,
                 request.AvatarUrl,
                 request.Bio,
-                request.Skills);
+                request.Skills,
+                request.DisplayJobTitle);
 
             Result result = await handler.Handle(command, cancellationToken);
 

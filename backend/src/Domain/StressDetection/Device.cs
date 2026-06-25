@@ -11,9 +11,24 @@ public sealed class Device : Entity
     public Guid Id { get; private set; }
 
     /// <summary>
-    /// The user this device belongs to.
+    /// The user that registered this device (the desktop agent's service identity).
     /// </summary>
     public Guid UserId { get; private set; }
+
+    /// <summary>
+    /// The user who has <em>claimed</em> this machine's data stream, if any.
+    /// When set, sessions and stress readings produced by this device are
+    /// attributed to this user instead of the registrant. This lets any
+    /// logged-in user point the running agent at their own dashboard without
+    /// re-deploying the agent with different credentials.
+    /// </summary>
+    public Guid? ClaimedByUserId { get; private set; }
+
+    /// <summary>
+    /// The user that owns the data this device produces: the claimer when the
+    /// device has been claimed, otherwise the registrant.
+    /// </summary>
+    public Guid OwnerId => ClaimedByUserId ?? UserId;
 
     /// <summary>
     /// Friendly name for display (e.g. "Khaled's Laptop").
@@ -68,6 +83,22 @@ public sealed class Device : Entity
 
     // Navigation
     public User? User { get; init; }
+
+    /// <summary>
+    /// How recently the agent must have reported in for the device to count as
+    /// "online". <see cref="IsActive"/> is only an enabled/registered flag, so
+    /// liveness is derived from <see cref="LastSeenAt"/> against this window.
+    /// </summary>
+    public static readonly TimeSpan OnlineWindow = TimeSpan.FromMinutes(10);
+
+    /// <summary>
+    /// True when the device is enabled and has reported within
+    /// <see cref="OnlineWindow"/> — i.e. an agent is currently running on it.
+    /// </summary>
+    public bool IsOnline =>
+        IsActive &&
+        LastSeenAt.HasValue &&
+        DateTime.UtcNow - LastSeenAt.Value <= OnlineWindow;
 
     private Device()
     {
@@ -140,5 +171,28 @@ public sealed class Device : Entity
     {
         IsActive = true;
         RevokedAt = null;
+    }
+
+    /// <summary>
+    /// Point this device's data stream at <paramref name="userId"/>. Subsequent
+    /// sessions and readings will be attributed to that user. A no-op if the
+    /// device is already claimed by the same user.
+    /// </summary>
+    public void Claim(Guid userId)
+    {
+        if (ClaimedByUserId == userId)
+        {
+            return;
+        }
+
+        ClaimedByUserId = userId;
+    }
+
+    /// <summary>
+    /// Release the claim so data falls back to the registrant.
+    /// </summary>
+    public void Unclaim()
+    {
+        ClaimedByUserId = null;
     }
 }

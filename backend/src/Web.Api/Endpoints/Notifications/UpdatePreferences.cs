@@ -9,14 +9,14 @@ namespace Web.Api.Endpoints.Notifications;
 internal sealed class UpdatePreferences : IEndpoint
 {
     public sealed record Request(
-        bool InAppEnabled,
-        bool EmailEnabled,
-        bool PushEnabled,
-        bool SmsEnabled,
-        bool EmailDigestEnabled,
-        string EmailDigestFrequency,
+        bool? InAppEnabled,
+        bool? EmailEnabled,
+        bool? PushEnabled,
+        bool? SmsEnabled,
+        bool? EmailDigestEnabled,
+        string? EmailDigestFrequency,
         TimeOnly? EmailDigestTime,
-        bool QuietHoursEnabled,
+        bool? QuietHoursEnabled,
         TimeOnly? QuietHoursStart,
         TimeOnly? QuietHoursEnd,
         string? QuietHoursTimezone);

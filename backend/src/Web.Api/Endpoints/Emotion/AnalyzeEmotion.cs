@@ -9,7 +9,7 @@ internal sealed class AnalyzeEmotion : IEndpoint
 {
     public sealed record Request(string Text, string? SessionId);
 
-    private static readonly (string keyword, string emotion, double confidence)[] _rules =
+    private static readonly (string Keyword, string Emotion, double Confidence)[] _rules =
     [
         ("anxious",     "Anxious",    0.85),
         ("anxiety",     "Anxious",    0.85),
@@ -33,12 +33,14 @@ internal sealed class AnalyzeEmotion : IEndpoint
     {
         app.MapPost("emotion/analyze", (Request request) =>
         {
-            string text = (request.Text ?? string.Empty).ToLowerInvariant();
+            string text = request.Text ?? string.Empty;
 
-            foreach (var (keyword, emotion, confidence) in _rules)
+            foreach ((string keyword, string emotion, double confidence) in _rules)
             {
-                if (text.Contains(keyword))
+                if (text.Contains(keyword, StringComparison.OrdinalIgnoreCase))
+                {
                     return Results.Ok(new { emotion, confidence });
+                }
             }
 
             return Results.Ok(new { emotion = "Neutral", confidence = 0.60 });

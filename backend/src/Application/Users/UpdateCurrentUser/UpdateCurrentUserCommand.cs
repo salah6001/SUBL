@@ -9,4 +9,5 @@ namespace Application.Users.UpdateCurrentUser;
 /// <param name="LastName">Updated last name.</param>
 public sealed record UpdateCurrentUserCommand(
     string FirstName,
-    string LastName) : ICommand;
+    string LastName,
+    string? Email = null) : ICommand;

@@ -62,7 +62,7 @@ internal sealed class CurrentUserService : ICurrentUserService
         }
     }
 
-    public bool IsSuperAdmin => IsInRole("Super Admin");
+    public bool IsSuperAdmin => IsInRole("Super Admin") || IsInRole("SuperAdmin") || IsInRole("Administrator");
 
     public bool IsInRole(string role)
     {

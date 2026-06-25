@@ -1,84 +1,129 @@
-import { useState, useRef, useEffect } from "react";
-import { X, CheckCircle, AlertTriangle, ChevronRight, BarChart2, Clock, Keyboard, Coffee } from "lucide-react";
-import { assessmentQuestions as mockQuestions, typingTestParagraph } from "../data/mockData";
+import { useState, useEffect } from "react";
+import { X, CheckCircle, AlertTriangle, ChevronRight, Activity } from "lucide-react";
+import { assessmentQuestions as mockQuestions } from "../data/mockData";
 import { surveyApi } from "../api/survey";
+import { stressApi } from "../api/stress";
+import type { CurrentStress } from "../api/stress";
+import type { SurveyResult } from "../api/survey";
 
-const LIKERT = ["Never", "Rarely", "Sometimes", "Often", "Always"];
+export interface AssessmentResult { score: number; level: string; takenAt: string }
 
-export function AssessmentModal({ onClose }: { onClose: () => void }) {
-  const [questions, setQuestions] = useState(mockQuestions);
+const pctColor = (p: number) => (p < 40 ? "#22c55e" : p < 65 ? "#f59e0b" : "#ef4444");
+
+/** Semicircular gauge — 0..100 percent, scale marked 0–10 at the ends. */
+function Gauge({ percent, color }: { percent: number; color: string }) {
+  const r = 64, cx = 80, cy = 80, sw = 14;
+  const L = Math.PI * r;
+  const p = Math.max(0, Math.min(100, percent)) / 100;
+  const d = `M ${cx - r} ${cy} A ${r} ${r} 0 0 1 ${cx + r} ${cy}`;
+  return (
+    <svg viewBox="0 0 160 96" className="w-full max-w-[180px] mx-auto">
+      <path d={d} fill="none" strokeWidth={sw} strokeLinecap="round" className="stroke-slate-100 dark:stroke-slate-800" />
+      <path d={d} fill="none" stroke={color} strokeWidth={sw} strokeLinecap="round" strokeDasharray={`${p * L} ${L}`} />
+      <text x={cx} y={cy - 4} textAnchor="middle" className="fill-slate-800 dark:fill-slate-100" style={{ fontSize: 24, fontWeight: 700 }}>
+        {percent}%
+      </text>
+      <text x={cx - r + 2} y={cy + 16} textAnchor="middle" className="fill-slate-400" style={{ fontSize: 9 }}>0</text>
+      <text x={cx + r - 2} y={cy + 16} textAnchor="middle" className="fill-slate-400" style={{ fontSize: 9 }}>10</text>
+    </svg>
+  );
+}
+
+function InfoRow({ k, v }: { k: string; v: string }) {
+  return (
+    <div className="flex items-center justify-between py-2">
+      <span className="text-slate-500 dark:text-slate-400">{k}</span>
+      <span className="text-slate-700 dark:text-slate-200">{v}</span>
+    </div>
+  );
+}
+
+export function AssessmentModal({
+  onClose,
+  onComplete,
+}: {
+  onClose: () => void;
+  onComplete?: (r: AssessmentResult) => void;
+}) {
+  const [questions, setQuestions] = useState<{ id: string; text: string; category: string; options: string[] }[]>(
+    mockQuestions.map(q => ({ ...q, options: ["Never", "Rarely", "Sometimes", "Often", "Always"] }))
+  );
   const [step, setStep] = useState(1);
   const [answers, setAnswers] = useState<Record<string, number>>({});
+  const [score, setScore] = useState(0);
+  const [level, setLevel] = useState("");
+  const [calculating, setCalculating] = useState(false);
+  const [currentStress, setCurrentStress] = useState<CurrentStress | null>(null);
 
   useEffect(() => {
     surveyApi.getQuestions()
-      .then(({ questions: qs }) => {
-        const mapped = qs.map((q, i) => ({
-          id: `q${q.id ?? i + 1}`,
-          text: q.text,
-          category: mockQuestions[i]?.category ?? "General",
-        }));
-        if (mapped.length > 0) setQuestions(mapped);
+      .then(qs => {
+        const sorted = [...qs].sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
+        if (sorted.length > 0) {
+          setQuestions(sorted.map(q => ({
+            id: q.id,
+            text: q.text,
+            category: q.category,
+            options: ["Never", "Rarely", "Sometimes", "Often", "Always"],
+          })));
+        }
       })
-      .catch(() => { /* keep mock */ });
+      .catch(() => {}); // keeps mock fallback
+    stressApi.getCurrent().then(setCurrentStress).catch(() => {});
   }, []);
-  const [typed, setTyped] = useState("");
-  const [startTime, setStartTime] = useState<number | null>(null);
-  const [typingDone, setTypingDone] = useState(false);
-  const [wpm, setWpm] = useState(0);
-  const [score, setScore] = useState(0);
-  const [calculating, setCalculating] = useState(false);
-  const textRef = useRef<HTMLTextAreaElement>(null);
 
   const answeredAll = Object.keys(answers).length >= questions.length;
 
-  const handleType = (v: string) => {
-    if (!startTime && v.length === 1) setStartTime(Date.now());
-    setTyped(v);
-    if (v.length >= typingTestParagraph.length * 0.88) {
-      const elapsed = (Date.now() - (startTime ?? Date.now())) / 60000;
-      const words = v.split(" ").filter(Boolean).length;
-      setWpm(Math.min(120, elapsed > 0 ? Math.round(words / elapsed) : 65));
-      setTypingDone(true);
-    }
-  };
-
   const goResults = () => {
     setCalculating(true);
-    const q1 = answers["q1"] ?? 3;
-    const q2 = answers["q2"] ?? 3;
-    const q3 = answers["q3"] ?? 3;
-    const q4 = answers["q4"] ?? 3;
-    const q5 = answers["q5"] ?? 3;
 
-    surveyApi.submit(q1, q2, q3, q4, q5)
-      .then(result => {
-        setScore(Math.min(100, Math.max(5, Math.round(result.score))));
+    const payload = questions.map(q => ({
+      questionId: q.id,
+      value: answers[q.id] ?? 3,
+    }));
+
+    surveyApi.submit(payload)
+      .then((result: SurveyResult) => {
+        const normalized = Math.round((result.totalScore / result.maxScore) * 100);
+        const s = Math.min(100, Math.max(5, normalized));
+        const lvl = result.level || (s < 40 ? "Low" : s < 65 ? "Moderate" : "High");
+        setScore(s);
+        setLevel(result.level);
+        onComplete?.({ score: s, level: lvl, takenAt: new Date().toISOString() });
       })
       .catch(() => {
-        const avg = (q1 + q2 + q3 + q4 + q5) / 5;
-        const psych = (avg / 5) * 62;
-        const typFactor = typingDone ? Math.max(0, (1 - wpm / 100) * 38) : 20;
-        setScore(Math.min(100, Math.max(5, Math.round(psych + typFactor))));
+        const vals = questions.map(q => answers[q.id] ?? 3);
+        const avg = vals.reduce((a, b) => a + b, 0) / vals.length;
+        const fallback = Math.min(100, Math.max(5, Math.round((avg / 5) * 100)));
+        const lvl = fallback < 40 ? "Low" : fallback < 65 ? "Moderate" : "High";
+        setScore(fallback);
+        setLevel(lvl);
+        onComplete?.({ score: fallback, level: lvl, takenAt: new Date().toISOString() });
       })
-      .finally(() => {
-        setCalculating(false);
-        setStep(3);
-      });
+      .finally(() => { setCalculating(false); setStep(2); });
   };
 
   const reset = () => {
-    setStep(1); setAnswers({}); setTyped(""); setStartTime(null);
-    setTypingDone(false); setWpm(0); setScore(0);
+    setStep(1); setAnswers({}); setScore(0); setLevel("");
   };
 
-  const stateLabel = score < 40 ? "Normal" : score < 65 ? "Moderate Stress" : "High Stress";
-  const stateColor = score < 40 ? "text-green-500" : score < 65 ? "text-amber-500" : "text-red-500";
-  const barColor = score < 40 ? "bg-green-500" : score < 65 ? "bg-amber-500" : "bg-red-500";
+  const stateLabel = level || (score < 40 ? "Normal" : score < 65 ? "Moderate Stress" : "High Stress");
+
+  // Comparison data
+  const modelPct  = currentStress?.hasData ? Math.round((currentStress.score ?? 0) * 100) : null;
+  const modelLevel = currentStress?.level ?? null;
+  const gap       = modelPct != null ? modelPct - score : null; // model − self (pp)
+  const hidden    = modelPct != null && modelPct - score > 20;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
-      <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-2xl w-full max-w-xl max-h-[88vh] overflow-hidden flex flex-col border border-slate-200 dark:border-slate-800">
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm"
+      onClick={onClose}
+    >
+      <div
+        className="bg-white dark:bg-slate-900 rounded-2xl shadow-2xl w-full max-w-xl max-h-[88vh] overflow-hidden flex flex-col border border-slate-200 dark:border-slate-800"
+        onClick={(e) => e.stopPropagation()}
+      >
 
         {/* Header */}
         <div className="flex items-center justify-between px-5 py-4 border-b border-slate-200 dark:border-slate-800 shrink-0">
@@ -88,8 +133,7 @@ export function AssessmentModal({ onClose }: { onClose: () => void }) {
             </p>
             <h2 className="text-sm text-slate-800 dark:text-slate-100">
               {step === 1 && "Psychological Questionnaire"}
-              {step === 2 && "Typing Baseline Calibration"}
-              {step === 3 && "Your Results"}
+              {step === 2 && "Source Comparison"}
               {calculating && "Analyzing..."}
             </h2>
           </div>
@@ -101,21 +145,21 @@ export function AssessmentModal({ onClose }: { onClose: () => void }) {
         {/* Step progress */}
         <div className="px-5 pt-4 pb-2 shrink-0">
           <div className="flex items-center gap-2">
-            {[1, 2, 3].map((s, i) => (
+            {[1, 2].map((s, i) => (
               <div key={s} className="flex items-center gap-2 flex-1">
                 <div className={`w-7 h-7 rounded-full flex items-center justify-center text-xs transition-all ${
                   step > s ? "bg-blue-600 text-white" : step === s ? "bg-blue-600 text-white ring-3 ring-blue-100 dark:ring-blue-900" : "bg-slate-100 dark:bg-slate-800 text-slate-400"
                 }`}>
                   {step > s ? <CheckCircle className="w-3.5 h-3.5" /> : s}
                 </div>
-                {i < 2 && (
+                {i < 1 && (
                   <div className={`flex-1 h-0.5 rounded-full transition-all ${step > s ? "bg-blue-600" : "bg-slate-200 dark:bg-slate-800"}`} />
                 )}
               </div>
             ))}
           </div>
           <div className="flex justify-between text-[10px] text-slate-400 dark:text-slate-600 mt-1.5">
-            <span>Questionnaire</span><span className="pr-3">Typing Test</span><span>Results</span>
+            <span>Questionnaire</span><span>Comparison</span>
           </div>
         </div>
 
@@ -136,54 +180,20 @@ export function AssessmentModal({ onClose }: { onClose: () => void }) {
                     <p className="text-sm text-slate-700 dark:text-slate-200 leading-relaxed">{q.text}</p>
                   </div>
                   <div className="flex gap-1.5 pl-7">
-                    {[1, 2, 3, 4, 5].map((v) => (
-                      <button key={v} onClick={() => setAnswers((p) => ({ ...p, [q.id]: v }))}
+                    {q.options.map((label, v) => (
+                      <button key={v} onClick={() => setAnswers((p) => ({ ...p, [q.id]: v + 1 }))}
                         className={`flex-1 py-1.5 rounded-lg border text-xs transition-all ${
-                          answers[q.id] === v
+                          answers[q.id] === v + 1
                             ? "border-blue-600 bg-blue-600 text-white"
                             : "border-slate-200 dark:border-slate-700 text-slate-500 dark:text-slate-400 hover:border-blue-300 dark:hover:border-blue-700 hover:bg-blue-50 dark:hover:bg-blue-950/30"
                         }`}>
-                        <div>{v}</div>
-                        <div className="text-[9px] opacity-70 mt-0.5 hidden sm:block">{LIKERT[v - 1]}</div>
+                        <div>{v + 1}</div>
+                        <div className="text-[9px] opacity-70 mt-0.5 hidden sm:block">{label}</div>
                       </button>
                     ))}
                   </div>
                 </div>
               ))}
-            </div>
-          )}
-
-          {/* Step 2 */}
-          {step === 2 && (
-            <div className="space-y-4">
-              <p className="text-xs text-slate-500 dark:text-slate-400">
-                Type the paragraph below at your natural pace to calibrate your baseline keystroke dynamics.
-              </p>
-              <div className="bg-slate-50 dark:bg-slate-800/60 rounded-xl p-4 border border-slate-200 dark:border-slate-700">
-                <p className="text-sm text-slate-600 dark:text-slate-300 leading-relaxed select-none">{typingTestParagraph}</p>
-              </div>
-              <div className="relative">
-                <textarea
-                  ref={textRef} value={typed} onChange={(e) => handleType(e.target.value)}
-                  disabled={typingDone} placeholder="Start typing here..." rows={4}
-                  className="w-full p-4 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-200 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none text-sm disabled:opacity-60"
-                />
-                {typingDone && (
-                  <div className="absolute inset-0 flex items-center justify-center bg-green-500/10 rounded-xl border-2 border-green-500">
-                    <div className="text-center">
-                      <CheckCircle className="w-8 h-8 text-green-500 mx-auto mb-1.5" />
-                      <p className="text-green-600 dark:text-green-400 text-sm">Baseline recorded · {wpm} WPM</p>
-                    </div>
-                  </div>
-                )}
-              </div>
-              <div className="flex items-center gap-3 text-xs text-slate-400 dark:text-slate-500">
-                <span>{typed.length} / {typingTestParagraph.length} chars</span>
-                <div className="flex-1 h-1.5 bg-slate-200 dark:bg-slate-700 rounded-full overflow-hidden">
-                  <div className="h-full bg-blue-600 rounded-full transition-all"
-                    style={{ width: `${Math.min(100, (typed.length / typingTestParagraph.length) * 100)}%` }} />
-                </div>
-              </div>
             </div>
           )}
 
@@ -198,62 +208,118 @@ export function AssessmentModal({ onClose }: { onClose: () => void }) {
             </div>
           )}
 
-          {/* Step 3 */}
-          {step === 3 && !calculating && (
+          {/* Step 2 — Source comparison */}
+          {step === 2 && !calculating && (
             <div className="space-y-5">
-              <div className="text-center py-2">
-                {score < 40 ? (
-                  <CheckCircle className="w-10 h-10 text-green-500 mx-auto mb-2" />
-                ) : (
-                  <AlertTriangle className={`w-10 h-10 mx-auto mb-2 ${stateColor}`} />
-                )}
-                <h3 className={`text-2xl mb-0.5 ${stateColor}`}>{stateLabel}</h3>
-                <p className="text-xs text-slate-400 dark:text-slate-500">Current stress index</p>
-              </div>
+              <p className="text-xs text-slate-500 dark:text-slate-400 text-center">
+                Comparing the AI model's reading with your self-assessment.
+              </p>
 
-              <div className="space-y-1.5">
-                <div className="flex justify-between text-xs mb-1">
-                  <span className="text-slate-500 dark:text-slate-400">Stress Score</span>
-                  <span className={`${stateColor}`}>{score}/100</span>
-                </div>
-                <div className="h-3 bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden">
-                  <div className={`h-full rounded-full transition-all duration-1000 ${barColor}`} style={{ width: `${score}%` }} />
-                </div>
-                <div className="flex justify-between text-[10px] text-slate-400 dark:text-slate-600">
-                  <span>Normal (0–39)</span><span>Moderate (40–64)</span><span>High (65+)</span>
-                </div>
-              </div>
-
-              <div className="grid grid-cols-2 gap-2.5">
-                {[
-                  { icon: Clock, label: "Response Time", value: `${(1.2 + Math.random() * 1.5).toFixed(1)}s`, status: score < 50 ? "Normal" : "Elevated" },
-                  { icon: Keyboard, label: "Typing Pattern", value: `${wpm || 62} WPM`, status: (wpm || 62) > 55 ? "Normal" : "Low" },
-                  { icon: Coffee, label: "Break Frequency", value: score < 50 ? "Optimal" : "Low", status: score < 50 ? "Good" : "Monitor" },
-                  { icon: BarChart2, label: "Stress Index", value: stateLabel, status: score < 40 ? "Stable" : "Watch" },
-                ].map(({ icon: Icon, label, value, status }) => (
-                  <div key={label} className="bg-slate-50 dark:bg-slate-800/60 rounded-xl p-3.5 border border-slate-200 dark:border-slate-700">
-                    <div className="flex items-center gap-2 mb-1.5">
-                      <Icon className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400" />
-                      <span className="text-[11px] text-slate-500 dark:text-slate-400">{label}</span>
-                    </div>
-                    <p className="text-sm text-slate-800 dark:text-slate-200">{value}</p>
-                    <p className={`text-[11px] mt-0.5 ${
-                      ["Normal", "Good", "Stable", "Optimal"].includes(status) ? "text-green-500" :
-                      ["Elevated", "Monitor", "Watch", "Low"].includes(status) ? "text-amber-500" : "text-slate-400"
-                    }`}>{status}</p>
+              {/* Two sources */}
+              <div className="grid grid-cols-2 gap-3">
+                {/* AI Model */}
+                <div className="rounded-xl border border-slate-200 dark:border-slate-700 p-3 flex flex-col items-center">
+                  <div className="flex items-center gap-1.5 mb-2">
+                    <span className="w-2 h-2 rounded-full bg-emerald-500" />
+                    <p className="text-xs text-slate-600 dark:text-slate-300">AI Model</p>
                   </div>
-                ))}
+                  {modelPct != null ? (
+                    <>
+                      <Gauge percent={modelPct} color={pctColor(modelPct)} />
+                      <div className="grid grid-cols-2 gap-1.5 w-full mt-2">
+                        <div className="rounded-lg bg-slate-50 dark:bg-slate-800/60 px-2 py-1.5 text-center">
+                          <p className="text-sm" style={{ color: pctColor(modelPct) }}>{modelPct}%</p>
+                          <p className="text-[9px] text-slate-400">Stress level</p>
+                        </div>
+                        <div className="rounded-lg bg-slate-50 dark:bg-slate-800/60 px-2 py-1.5 text-center">
+                          <p className="text-sm text-slate-700 dark:text-slate-200">{modelLevel ?? "—"}</p>
+                          <p className="text-[9px] text-slate-400">State</p>
+                        </div>
+                      </div>
+                    </>
+                  ) : (
+                    <div className="flex-1 flex flex-col items-center justify-center py-10 gap-2">
+                      <Activity className="w-7 h-7 text-slate-300 dark:text-slate-600" />
+                      <p className="text-sm text-slate-400">No data yet</p>
+                    </div>
+                  )}
+                </div>
+
+                {/* Self-Assessment */}
+                <div className="rounded-xl border border-slate-200 dark:border-slate-700 p-3 flex flex-col items-center">
+                  <div className="flex items-center gap-1.5 mb-2">
+                    <span className="w-2 h-2 rounded-full bg-blue-500" />
+                    <p className="text-xs text-slate-600 dark:text-slate-300">Self-Assessment</p>
+                  </div>
+                  <Gauge percent={score} color={pctColor(score)} />
+                  <div className="grid grid-cols-2 gap-1.5 w-full mt-2">
+                    <div className="rounded-lg bg-slate-50 dark:bg-slate-800/60 px-2 py-1.5 text-center">
+                      <p className="text-sm" style={{ color: pctColor(score) }}>{(score / 10).toFixed(1)}/10</p>
+                      <p className="text-[9px] text-slate-400">Survey score</p>
+                    </div>
+                    <div className="rounded-lg bg-slate-50 dark:bg-slate-800/60 px-2 py-1.5 text-center">
+                      <p className="text-sm text-slate-700 dark:text-slate-200">{stateLabel}</p>
+                      <p className="text-[9px] text-slate-400">Interpretation</p>
+                    </div>
+                  </div>
+                </div>
               </div>
 
-              <div className={`rounded-xl p-3.5 border text-sm ${
-                score >= 40
-                  ? "bg-amber-50 dark:bg-amber-950/30 border-amber-200 dark:border-amber-900/50 text-amber-700 dark:text-amber-400"
-                  : "bg-green-50 dark:bg-green-950/30 border-green-200 dark:border-green-900/50 text-green-700 dark:text-green-400"
-              }`}>
-                {score >= 40
-                  ? "Your stress levels are elevated. Consider scheduling a 10-minute break and trying the breathing exercise in Subl AI."
-                  : "Great work! Your stress levels are in a healthy range. Keep maintaining your current routines."}
+              {/* Gap badge */}
+              <div className="flex items-center justify-center gap-4 rounded-xl border border-slate-200 dark:border-slate-700 py-3 px-4">
+                <div className="text-center shrink-0">
+                  <p className="text-2xl" style={{ color: gap == null ? "#94a3b8" : gap > 0 ? "#ef4444" : "#22c55e" }}>
+                    {gap == null ? "—" : `${gap > 0 ? "+" : ""}${gap}pp`}
+                  </p>
+                  <p className="text-[10px] text-slate-400">The Gap</p>
+                </div>
+                <div className="h-8 w-px bg-slate-200 dark:bg-slate-700" />
+                <p className="text-xs text-slate-500 dark:text-slate-400">
+                  {gap == null ? "No model reading to compare yet."
+                    : Math.abs(gap) < 20 ? "Slight difference — both readings broadly agree."
+                    : "Significant gap between the two sources."}
+                </p>
               </div>
+
+              {/* Gap analysis */}
+              <div className="rounded-xl border border-slate-200 dark:border-slate-700 p-4 space-y-3">
+                <p className="text-xs text-slate-500 dark:text-slate-400">Gap analysis</p>
+                <div className="space-y-2.5">
+                  <div>
+                    <div className="flex justify-between text-[11px] mb-1">
+                      <span className="flex items-center gap-1.5 text-slate-600 dark:text-slate-300"><span className="w-2 h-2 rounded-full bg-emerald-500" />AI Model</span>
+                      <span className="text-slate-500 dark:text-slate-400">{modelPct == null ? "No data" : `${modelPct}%`}</span>
+                    </div>
+                    <div className="h-2 bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden">
+                      {modelPct != null && <div className="h-full bg-emerald-500 rounded-full transition-all duration-700" style={{ width: `${modelPct}%` }} />}
+                    </div>
+                  </div>
+                  <div>
+                    <div className="flex justify-between text-[11px] mb-1">
+                      <span className="flex items-center gap-1.5 text-slate-600 dark:text-slate-300"><span className="w-2 h-2 rounded-full bg-blue-500" />Self-Report</span>
+                      <span className="text-slate-500 dark:text-slate-400">{score}%</span>
+                    </div>
+                    <div className="h-2 bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden">
+                      <div className="h-full bg-blue-500 rounded-full transition-all duration-700" style={{ width: `${score}%` }} />
+                    </div>
+                  </div>
+                </div>
+                <div className="divide-y divide-slate-100 dark:divide-slate-800 text-xs border-t border-slate-100 dark:border-slate-800 pt-1">
+                  <InfoRow k="AI Model" v={modelPct == null ? "No data yet" : `${modelPct}%`} />
+                  <InfoRow k="Self-Report" v={`${score}%`} />
+                  <InfoRow k="Gap" v={gap == null ? "—" : `${gap > 0 ? "+" : ""}${gap}pp`} />
+                  <InfoRow k="Hidden stress" v={modelPct == null ? "—" : hidden ? "Yes" : "No"} />
+                </div>
+              </div>
+
+              {hidden && (
+                <div className="rounded-xl p-3.5 border border-amber-200 dark:border-amber-900/50 bg-amber-50 dark:bg-amber-950/30">
+                  <p className="text-xs text-amber-700 dark:text-amber-400 flex items-center gap-2">
+                    <AlertTriangle className="w-3.5 h-3.5 shrink-0" />
+                    Your behavioral signals suggest higher stress than you reported. Consider a check-in with Subl AI.
+                  </p>
+                </div>
+              )}
             </div>
           )}
         </div>
@@ -265,23 +331,13 @@ export function AssessmentModal({ onClose }: { onClose: () => void }) {
               <span className="text-xs text-slate-400 dark:text-slate-500">
                 {Object.keys(answers).length}/{questions.length} answered
               </span>
-              <button onClick={() => setStep(2)} disabled={!answeredAll}
+              <button onClick={goResults} disabled={!answeredAll}
                 className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-xl text-sm hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors">
-                Continue <ChevronRight className="w-3.5 h-3.5" />
-              </button>
-            </>
-          )}
-          {step === 2 && !calculating && (
-            <>
-              <button onClick={() => setStep(1)} className="px-4 py-2 text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-xl text-sm transition-colors">
-                Back
-              </button>
-              <button onClick={goResults} className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-xl text-sm hover:bg-blue-700 transition-colors">
                 Analyze <ChevronRight className="w-3.5 h-3.5" />
               </button>
             </>
           )}
-          {step === 3 && (
+          {step === 2 && (
             <>
               <button onClick={reset} className="px-4 py-2 text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-xl text-sm transition-colors">
                 Retake

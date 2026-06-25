@@ -6,6 +6,13 @@ namespace Domain.Common;
 public enum Department
 {
     /// <summary>
+    /// No department assigned yet (e.g. a freshly self-registered user the
+    /// admin has not placed into a team). Departments are user-centric and
+    /// assigned by an administrator.
+    /// </summary>
+    Unassigned = 0,
+
+    /// <summary>
     /// Software development and engineering team.
     /// </summary>
     Development = 1,

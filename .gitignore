@@ -11,6 +11,9 @@ build/
 .env.local
 .env.*.local
 
+# Chatbot secret (Gemini API key)
+backend/SublChatbot/.env
+
 # Logs
 *.log
 npm-debug.log*
@@ -40,3 +43,9 @@ __pycache__/
 frontend/
 if_needed/
 *ElDeep/
+additional/
+
+# Specs / scratch docs (not used to build the project)
+/spec.md
+/backend/spec.md
+Moamen UI + frontend/FRONTEND_REMOVAL_SPEC.md

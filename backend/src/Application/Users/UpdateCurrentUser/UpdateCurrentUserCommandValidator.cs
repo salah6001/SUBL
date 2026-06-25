@@ -20,5 +20,10 @@ internal sealed class UpdateCurrentUserCommandValidator : AbstractValidator<Upda
             .WithMessage("Last name is required")
             .MaximumLength(100)
             .WithMessage("Last name must not exceed 100 characters");
+
+        RuleFor(x => x.Email)
+            .EmailAddress()
+            .WithMessage("A valid email address is required")
+            .When(x => !string.IsNullOrWhiteSpace(x.Email));
     }
 }

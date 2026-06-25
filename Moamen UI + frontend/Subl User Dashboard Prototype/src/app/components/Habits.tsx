@@ -1,10 +1,12 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   CheckCircle2, Circle, Wind, Activity, Droplets, Target, Moon,
   BookOpen, Timer, Dumbbell, Plus, X, Flame, Trophy, Sparkles,
 } from "lucide-react";
 import { toast } from "sonner";
 import type { Habit, HabitCategory } from "../data/mockData";
+import { habitsApi } from "../api/habits";
+import { usePrefs } from "../lib/prefs";
 
 const CATEGORY_CONFIG: Record<
   HabitCategory,
@@ -52,15 +54,16 @@ function HabitIcon({ name, className }: { name: string; className?: string }) {
 
 const CATEGORIES: HabitCategory[] = ["Mindfulness", "Physical", "Nutrition", "Focus", "Recovery"];
 
-interface HabitsProps {
-  habits: Habit[];
-  setHabits: (habits: Habit[]) => void;
-}
-
-export function Habits({ habits, setHabits }: HabitsProps) {
+export function Habits() {
+  const { t } = usePrefs();
+  const [habits,       setHabits]       = useState<Habit[]>([]);
   const [showModal,    setShowModal]    = useState(false);
   const [newLabel,     setNewLabel]     = useState("");
   const [newCategory,  setNewCategory]  = useState<HabitCategory>("Mindfulness");
+
+  // Habits live in the backend (per-user, with server-computed streaks).
+  const reload = () => habitsApi.list().then(setHabits).catch(() => {});
+  useEffect(() => { reload(); }, []);
 
   const completed  = habits.filter((h) => h.completed).length;
   const total      = habits.length;
@@ -71,31 +74,30 @@ export function Habits({ habits, setHabits }: HabitsProps) {
     const habit = habits.find((h) => h.id === id);
     if (!habit) return;
     const nowCompleted = !habit.completed;
-    setHabits(habits.map((h) => (h.id === id ? { ...h, completed: nowCompleted } : h)));
+    // Optimistic flip, then reconcile the streak from the server.
+    setHabits(prev => prev.map((h) => (h.id === id ? { ...h, completed: nowCompleted } : h)));
     if (nowCompleted) toast.success(`✓ "${habit.label}" completed!`);
+    habitsApi.toggle(id)
+      .then(reload)
+      .catch(() => { toast.error("Failed to update habit"); reload(); });
   };
 
   const deleteHabit = (id: string, label: string) => {
-    setHabits(habits.filter((h) => h.id !== id));
-    toast.success(`"${label}" removed`);
+    setHabits(prev => prev.filter((h) => h.id !== id));
+    habitsApi.remove(id)
+      .then(() => toast.success(`"${label}" removed`))
+      .catch(() => { toast.error("Failed to remove habit"); reload(); });
   };
 
   const addHabit = () => {
     const trimmed = newLabel.trim();
     if (!trimmed) return;
-    const newHabit: Habit = {
-      id:        `h${Date.now()}`,
-      label:     trimmed,
-      category:  newCategory,
-      icon:      "CheckCircle2",
-      completed: false,
-      streak:    0,
-    };
-    setHabits([...habits, newHabit]);
+    setShowModal(false);
+    habitsApi.create(trimmed, newCategory, "Activity")
+      .then(() => { toast.success("New habit added!"); reload(); })
+      .catch(() => toast.error("Failed to add habit"));
     setNewLabel("");
     setNewCategory("Mindfulness");
-    setShowModal(false);
-    toast.success("New habit added!");
   };
 
   const grouped = CATEGORIES.reduce<Record<HabitCategory, Habit[]>>((acc, cat) => {
@@ -118,9 +120,9 @@ export function Habits({ habits, setHabits }: HabitsProps) {
           <div className="relative">
             <div className="flex items-center justify-between mb-4">
               <div>
-                <p className="text-blue-200 text-xs mb-1">Today's Wellness Progress</p>
+                <p className="text-blue-200 text-xs mb-1">{t("habits.todayProgress")}</p>
                 <h2 className="text-2xl text-white">
-                  {completed}/{total} habits completed
+                  {completed}/{total} {t("habits.habitsCompleted")}
                 </h2>
               </div>
               {progress === 100 && (
@@ -134,8 +136,8 @@ export function Habits({ habits, setHabits }: HabitsProps) {
               />
             </div>
             <div className="flex justify-between text-xs text-blue-200">
-              <span>{progress}% complete</span>
-              <span>{total - completed} remaining</span>
+              <span>{progress}{t("habits.percentComplete")}</span>
+              <span>{total - completed} {t("habits.remaining")}</span>
             </div>
           </div>
         </div>
@@ -144,22 +146,22 @@ export function Habits({ habits, setHabits }: HabitsProps) {
         <div className="grid grid-cols-2 gap-4">
           <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 p-4">
             <Flame className="w-5 h-5 text-orange-500 mb-2" />
-            <p className="text-[11px] text-slate-500 dark:text-slate-400 mb-1">Best Streak</p>
-            <p className="text-slate-800 dark:text-slate-100">{bestStreak} days</p>
+            <p className="text-[11px] text-slate-500 dark:text-slate-400 mb-1">{t("habits.bestStreak")}</p>
+            <p className="text-slate-800 dark:text-slate-100">{bestStreak} {t("habits.days")}</p>
           </div>
           <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 p-4">
             <Sparkles className="w-5 h-5 text-blue-500 mb-2" />
-            <p className="text-[11px] text-slate-500 dark:text-slate-400 mb-1">Total Habits</p>
+            <p className="text-[11px] text-slate-500 dark:text-slate-400 mb-1">{t("habits.totalHabits")}</p>
             <p className="text-slate-800 dark:text-slate-100">{total}</p>
           </div>
           <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 p-4">
             <CheckCircle2 className="w-5 h-5 text-green-500 mb-2" />
-            <p className="text-[11px] text-slate-500 dark:text-slate-400 mb-1">Done Today</p>
+            <p className="text-[11px] text-slate-500 dark:text-slate-400 mb-1">{t("habits.doneToday")}</p>
             <p className="text-slate-800 dark:text-slate-100">{completed}</p>
           </div>
           <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 p-4">
             <Trophy className="w-5 h-5 text-amber-500 mb-2" />
-            <p className="text-[11px] text-slate-500 dark:text-slate-400 mb-1">Rate</p>
+            <p className="text-[11px] text-slate-500 dark:text-slate-400 mb-1">{t("habits.rate")}</p>
             <p className="text-slate-800 dark:text-slate-100">{progress}%</p>
           </div>
         </div>
@@ -167,13 +169,13 @@ export function Habits({ habits, setHabits }: HabitsProps) {
 
       {/* ── Section header with Add button ──────────────────────────────────── */}
       <div className="flex items-center justify-between">
-        <h3 className="text-sm text-slate-700 dark:text-slate-300">Today's Wellness Habits</h3>
+        <h3 className="text-sm text-slate-700 dark:text-slate-300">{t("habits.todayHabits")}</h3>
         <button
           onClick={() => setShowModal(true)}
           className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-sm transition-colors shadow-sm shadow-blue-600/25"
         >
           <Plus className="w-4 h-4" />
-          Add Habit
+          {t("habits.add")}
         </button>
       </div>
 
@@ -191,7 +193,7 @@ export function Habits({ habits, setHabits }: HabitsProps) {
                 <span
                   className={`px-2.5 py-0.5 rounded-lg text-xs border ${cfg.bg} ${cfg.darkBg} ${cfg.color} ${cfg.borderCls}`}
                 >
-                  {cat}
+                  {t(`hcat.${cat}`)}
                 </span>
                 <span className="text-[11px] text-slate-400 dark:text-slate-500">
                   {catDone}/{catHabits.length}
@@ -232,14 +234,14 @@ export function Habits({ habits, setHabits }: HabitsProps) {
                       {habit.streak > 0 && (
                         <p className="text-[10px] text-orange-500 flex items-center gap-0.5 mt-0.5">
                           <Flame className="w-2.5 h-2.5" />
-                          {habit.streak} day streak
+                          {habit.streak} {t("habits.streak")}
                         </p>
                       )}
                     </div>
                     <button
                       onClick={() => deleteHabit(habit.id, habit.label)}
                       className="p-1.5 rounded-lg text-slate-300 dark:text-slate-700 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-950/40 transition-all shrink-0"
-                      title="Remove habit"
+                      title={t("habits.removeHabit")}
                     >
                       <X className="w-3.5 h-3.5" />
                     </button>
@@ -258,9 +260,9 @@ export function Habits({ habits, setHabits }: HabitsProps) {
             <div className="flex items-center justify-between px-5 py-4 border-b border-slate-200 dark:border-slate-800">
               <div>
                 <p className="text-[10px] uppercase tracking-widest text-blue-600 dark:text-blue-400 mb-0.5">
-                  Daily Habits
+                  {t("habits.title")}
                 </p>
-                <h3 className="text-sm text-slate-800 dark:text-slate-200">Add New Habit</h3>
+                <h3 className="text-sm text-slate-800 dark:text-slate-200">{t("habits.addNew")}</h3>
               </div>
               <button
                 onClick={() => setShowModal(false)}
@@ -273,14 +275,14 @@ export function Habits({ habits, setHabits }: HabitsProps) {
             <div className="p-5 space-y-4">
               <div>
                 <label className="block text-[11px] text-slate-500 dark:text-slate-400 mb-1.5">
-                  Habit Name *
+                  {t("habits.nameLabel")}
                 </label>
                 <input
                   type="text"
                   value={newLabel}
                   onChange={(e) => setNewLabel(e.target.value)}
                   onKeyDown={(e) => e.key === "Enter" && addHabit()}
-                  placeholder="e.g. 10-Min Morning Meditation"
+                  placeholder={t("habits.namePlaceholder")}
                   className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-800 dark:text-slate-200 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
                   autoFocus
                 />
@@ -288,7 +290,7 @@ export function Habits({ habits, setHabits }: HabitsProps) {
 
               <div>
                 <label className="block text-[11px] text-slate-500 dark:text-slate-400 mb-2">
-                  Category
+                  {t("habits.category")}
                 </label>
                 <div className="grid grid-cols-3 gap-2">
                   {CATEGORIES.map((cat) => {
@@ -304,7 +306,7 @@ export function Habits({ habits, setHabits }: HabitsProps) {
                             : "border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400 hover:border-slate-300 dark:hover:border-slate-600"
                         }`}
                       >
-                        {cat}
+                        {t(`hcat.${cat}`)}
                       </button>
                     );
                   })}
@@ -317,14 +319,14 @@ export function Habits({ habits, setHabits }: HabitsProps) {
                 onClick={() => setShowModal(false)}
                 className="px-4 py-2 text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-xl text-sm transition-colors"
               >
-                Cancel
+                {t("action.cancel")}
               </button>
               <button
                 onClick={addHabit}
                 disabled={!newLabel.trim()}
                 className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-sm disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
               >
-                Add Habit
+                {t("habits.add")}
               </button>
             </div>
           </div>

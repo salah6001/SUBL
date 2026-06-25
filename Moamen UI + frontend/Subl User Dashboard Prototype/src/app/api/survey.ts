@@ -1,24 +1,27 @@
 import { api } from "./client";
 
 export interface SurveyQuestion {
-  id: number;
+  id: string;    // Guid from backend
   text: string;
-  en: string;
-  scale: string;
+  category: string;
+  order: number;
 }
 
 export interface SurveyResult {
-  score: number;
-  label: "Normal" | "Medium" | "High";
-  emotional_state: string;
-  response_time: string;
-  typing_pattern: string;
-  break_frequency: string;
-  recommendations: { title: string; description: string }[];
+  id: string;
+  submittedAt: string;
+  totalScore: number;
+  maxScore: number;
+  level: string;   // "Low" | "Moderate" | "High"
 }
 
 export const surveyApi = {
-  getQuestions: () => api.get<{ questions: SurveyQuestion[] }>("/survey/questions"),
-  submit: (q1: number, q2: number, q3: number, q4: number, q5: number) =>
-    api.post<SurveyResult>("/survey", { q1, q2, q3, q4, q5 }),
+  getQuestions: () =>
+    api.get<SurveyQuestion[]>("/survey/questions"),
+
+  submit: (answers: { questionId: string; value: number }[]) =>
+    api.post<SurveyResult>("/survey/responses", { answers }),
+
+  /** Past survey results, most recent first. */
+  history: () => api.get<SurveyResult[]>("/survey/responses"),
 };

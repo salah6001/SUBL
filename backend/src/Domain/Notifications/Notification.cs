@@ -98,6 +98,17 @@ public sealed class Notification : Entity
     public DateTime? ArchivedAt { get; private set; }
 
     /// <summary>
+    /// Whether this notification has been resolved (e.g. a stress alert that has
+    /// been acted upon). Distinct from dismiss/archive, which only affect display.
+    /// </summary>
+    public bool IsResolved { get; private set; }
+
+    /// <summary>
+    /// When this notification was resolved.
+    /// </summary>
+    public DateTime? ResolvedAt { get; private set; }
+
+    /// <summary>
     /// When this notification should be sent (for scheduled notifications).
     /// </summary>
     public DateTime? ScheduledFor { get; private set; }
@@ -160,6 +171,7 @@ public sealed class Notification : Entity
             IsRead = false,
             IsDismissed = false,
             IsArchived = false,
+            IsResolved = false,
             ScheduledFor = scheduledFor,
             ExpiresAt = expiresAt,
             CreatedAt = DateTime.UtcNow,
@@ -215,6 +227,17 @@ public sealed class Notification : Entity
 
         IsArchived = true;
         ArchivedAt = DateTime.UtcNow;
+    }
+
+    public void Resolve()
+    {
+        if (IsResolved)
+        {
+            return;
+        }
+
+        IsResolved = true;
+        ResolvedAt = DateTime.UtcNow;
     }
 
     public void AddDelivery(NotificationDelivery delivery)

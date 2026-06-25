@@ -34,6 +34,13 @@ internal sealed class DeviceRepository(ApplicationDbContext context) : IDeviceRe
             .OrderByDescending(d => d.LastSeenAt ?? d.CreatedAt)
             .ToListAsync(cancellationToken);
 
+    public Task<List<Device>> GetAllActiveAsync(
+        CancellationToken cancellationToken = default) =>
+        context.Devices
+            .Where(d => d.IsActive)
+            .OrderByDescending(d => d.LastSeenAt ?? d.CreatedAt)
+            .ToListAsync(cancellationToken);
+
     public void Add(Device device) => context.Devices.Add(device);
 
     public void Remove(Device device) => context.Devices.Remove(device);

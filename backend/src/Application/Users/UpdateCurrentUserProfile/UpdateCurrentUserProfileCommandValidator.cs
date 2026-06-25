@@ -45,6 +45,13 @@ internal sealed class UpdateCurrentUserProfileCommandValidator : AbstractValidat
             return true;
         }
 
+        // Allow the bundled-avatar sentinel "vector:N" (N = 0..4), rendered
+        // client-side instead of pointing at a hosted image.
+        if (System.Text.RegularExpressions.Regex.IsMatch(url, "^vector:[0-4]$"))
+        {
+            return true;
+        }
+
         return Uri.TryCreate(url, UriKind.Absolute, out Uri? result) &&
                (result.Scheme == Uri.UriSchemeHttp || result.Scheme == Uri.UriSchemeHttps);
     }

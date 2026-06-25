@@ -1,13 +1,11 @@
 import { useEffect, useState } from "react";
-import { dashboardApi } from "../api/dashboard";
+import { fetchDepartmentStress } from "../lib/admin/analyticsApi";
+import { ApiError } from "../lib/apiClient";
 
-const FALLBACK = [
-  { department: "Marketing",  stress: 28 },
-  { department: "Sales",      stress: 35 },
-  { department: "Dev",        stress: 68 },
-  { department: "HR",         stress: 22 },
-  { department: "Support",    stress: 74 },
-];
+interface DeptStress {
+  department: string;
+  stress: number;
+}
 
 function getBarColor(stress: number): string {
   if (stress >= 60) return "#ef4444";
@@ -21,36 +19,7 @@ function getLevel(stress: number): string {
   return "Normal";
 }
 
-function shorten(name: string): string {
-  const map: Record<string, string> = {
-    "Engineering": "Eng",
-    "Customer Support": "Support",
-    "Human Resources": "HR",
-    "Marketing": "Mktg",
-    "Product": "Product",
-    "Sales": "Sales",
-  };
-  return map[name] ?? name.slice(0, 7);
-}
-
-export function DepartmentBenchmarkChart() {
-  const [data, setData] = useState(FALLBACK);
-  const [hovered, setHovered] = useState<string | null>(null);
-
-  useEffect(() => {
-    dashboardApi.getDepartments()
-      .then(departments => {
-        const mapped = departments.map(d => ({
-          department: shorten(d.department),
-          stress: Math.min(100, Math.round(d.averageScore)),
-        }));
-        if (mapped.length > 0) setData(mapped);
-      })
-      .catch(() => { /* keep fallback */ });
-  }, []);
-
-  const maxStress = Math.max(...data.map(d => d.stress));
-
+function Shell({ children }: { children: React.ReactNode }) {
   return (
     <div className="bg-white dark:bg-slate-900 rounded-2xl p-6 shadow-sm border border-slate-100 dark:border-slate-800">
       <div className="flex items-start justify-between mb-5">
@@ -70,7 +39,48 @@ export function DepartmentBenchmarkChart() {
           </span>
         </div>
       </div>
+      {children}
+    </div>
+  );
+}
 
+export function DepartmentBenchmarkChart() {
+  const [data, setData] = useState<DeptStress[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [hovered, setHovered] = useState<string | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    fetchDepartmentStress()
+      .then(res => {
+        if (cancelled) return;
+        setData(res.departments.map(d => ({
+          department: d.department,
+          stress: Math.round(d.averageStressScore * 100),
+        })));
+      })
+      .catch(err => {
+        if (!cancelled) setError(err instanceof ApiError ? err.displayMessage : "Couldn't load department data.");
+      })
+      .finally(() => { if (!cancelled) setLoading(false); });
+    return () => { cancelled = true; };
+  }, []);
+
+  if (loading) {
+    return <Shell><div className="py-10 flex justify-center"><span className="w-6 h-6 border-2 border-blue-200 border-t-blue-600 rounded-full animate-spin" /></div></Shell>;
+  }
+
+  if (error) {
+    return <Shell><p className="py-8 text-center text-red-500" style={{ fontSize: "0.82rem" }}>{error}</p></Shell>;
+  }
+
+  if (data.length === 0) {
+    return <Shell><p className="py-8 text-center text-slate-400 dark:text-slate-500" style={{ fontSize: "0.82rem" }}>No stress data recorded yet.</p></Shell>;
+  }
+
+  return (
+    <Shell>
       <div className="space-y-3 pt-1">
         {data.map(d => {
           const color = getBarColor(d.stress);
@@ -82,38 +92,32 @@ export function DepartmentBenchmarkChart() {
               onMouseEnter={() => setHovered(d.department)}
               onMouseLeave={() => setHovered(null)}
             >
-              <span className="flex-shrink-0 text-right text-slate-500 dark:text-slate-400" style={{ fontSize: "0.75rem", width: "52px" }}>
+              <span
+                className="flex-shrink-0 text-right text-slate-500 dark:text-slate-400"
+                style={{ fontSize: "0.75rem", width: "52px" }}
+              >
                 {d.department}
               </span>
               <div className="flex-1 relative h-8 bg-slate-100 dark:bg-slate-800 rounded-lg overflow-hidden">
                 <div
                   className="h-full rounded-lg transition-all duration-500 ease-out"
-                  style={{ width: `${(d.stress / 100) * 100}%`, background: color, opacity: isHovered ? 1 : 0.85 }}
+                  style={{
+                    width: `${d.stress}%`,
+                    background: color,
+                    opacity: isHovered ? 1 : 0.85,
+                  }}
                 />
-                {isHovered && (
-                  <div className="absolute inset-y-0 right-0 flex items-center pr-2" style={{ left: `${(d.stress / 100) * 100}%` }}>
-                    <div className="ml-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg px-2.5 py-1.5 shadow-lg whitespace-nowrap z-10">
-                      <p className="text-slate-700 dark:text-slate-200" style={{ fontSize: "0.75rem", fontWeight: 600 }}>{d.department}</p>
-                      <p style={{ fontSize: "0.72rem", color, fontWeight: 600 }}>{d.stress}% — {getLevel(d.stress)}</p>
-                    </div>
-                  </div>
-                )}
               </div>
-              <span className="flex-shrink-0 tabular-nums" style={{ fontSize: "0.78rem", fontWeight: 700, color, width: "36px" }}>
-                {d.stress}%
+              <span
+                className="flex-shrink-0 tabular-nums"
+                style={{ fontSize: "0.78rem", fontWeight: 700, color, width: "78px" }}
+              >
+                {d.stress}% · {getLevel(d.stress)}
               </span>
             </div>
           );
         })}
       </div>
-
-      <div className="flex items-center mt-3 ml-[64px] mr-[44px]">
-        {[0, 25, 50, 75, 100].map(v => (
-          <div key={v} className="flex-1 text-center text-slate-300 dark:text-slate-700" style={{ fontSize: "0.65rem" }}>
-            {v === 0 ? null : `${v}`}
-          </div>
-        ))}
-      </div>
-    </div>
+    </Shell>
   );
 }

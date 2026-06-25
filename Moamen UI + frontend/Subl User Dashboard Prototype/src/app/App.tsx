@@ -1,195 +1,299 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect } from "react";
 import { Toaster, toast } from "sonner";
 import { Sidebar } from "./components/Sidebar";
 import type { Route } from "./components/Sidebar";
 import { Header } from "./components/Header";
 import { BottomNav } from "./components/BottomNav";
 import { AssessmentModal } from "./components/AssessmentModal";
+import type { AssessmentResult } from "./components/AssessmentModal";
 import { Dashboard } from "./components/Dashboard";
 import { Habits } from "./components/Habits";
 import { Articles } from "./components/Articles";
 import { SublAI } from "./components/SublAI";
 import { Settings } from "./components/Settings";
 import type { DateFilter } from "./components/DateFilterBar";
-import { currentUser, initialNotifications, defaultHabits } from "./data/mockData";
-import type { Habit } from "./data/mockData";
-import { login as apiLogin } from "./api/auth";
-type Theme = "light" | "dark";
+import { LoginScreen } from "./components/auth/LoginScreen";
+import { SignUpScreen } from "./components/auth/SignUpScreen";
+import { getToken } from "./api/client";
+import { logout as clearAuth } from "./api/auth";
+import { isAdminToken } from "./lib/jwtDecode";
+import { userApi } from "./api/user";
+import { notificationsApi } from "./api/notifications";
+import type { AppNotification } from "./api/notifications";
+import { stressApi } from "./api/stress";
+import type { CurrentStress } from "./api/stress";
+import { devicesApi } from "./api/devices";
+import { surveyApi } from "./api/survey";
+import { preferencesApi, DEFAULT_PREFERENCES } from "./api/preferences";
+import type { Preferences, ThemePref } from "./api/preferences";
+import { PreferencesProvider } from "./lib/prefs";
+
+const prefersDark = () => window.matchMedia("(prefers-color-scheme: dark)").matches;
 
 interface UserProfile {
-  name: string; email: string; phone: string; role: string; avatar: string;
-}
-
-function LoginScreen({ onLogin }: { onLogin: () => void }) {
-  const [loading, setLoading] = useState(false);
-  const emailRef    = useRef<HTMLInputElement>(null);
-  const passwordRef = useRef<HTMLInputElement>(null);
-
-  const submit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setLoading(true);
-    const email    = emailRef.current?.value    ?? "alex.johnson@company.com";
-    const password = passwordRef.current?.value ?? "demo-password";
-    try {
-      await apiLogin(email, password);
-    } catch (err) {
-      // Fall back gracefully so the UI remains usable without a live backend
-      console.warn("API login failed, proceeding with demo mode:", err);
-    } finally {
-      setLoading(false);
-      onLogin();
-    }
-  };
-
-  return (
-    <div className="min-h-screen bg-[#020817] flex items-center justify-center p-4 relative overflow-hidden">
-      <div className="absolute top-1/3 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[400px] bg-blue-600/8 rounded-full blur-3xl pointer-events-none" />
-      <div className="absolute bottom-1/3 left-1/4 w-64 h-64 bg-indigo-600/6 rounded-full blur-3xl pointer-events-none" />
-      <div className="relative w-full max-w-sm">
-        <div className="text-center mb-8">
-          <div className="w-12 h-12 rounded-2xl bg-blue-600 flex items-center justify-center mx-auto mb-4 shadow-2xl shadow-blue-600/40">
-            <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
-            </svg>
-          </div>
-          <h1 className="text-white text-2xl mb-0.5">Subl</h1>
-          <p className="text-slate-500 text-sm">AI-Driven Workplace Wellness</p>
-        </div>
-        <div className="bg-white/[0.04] backdrop-blur-xl border border-white/10 rounded-2xl p-7 shadow-2xl">
-          <h2 className="text-white text-lg mb-0.5">Welcome back</h2>
-          <p className="text-slate-500 text-xs mb-5">Sign in to your wellness dashboard</p>
-          <form onSubmit={submit} className="space-y-3.5">
-            <div>
-              <label className="block text-[11px] text-slate-500 mb-1.5">Email</label>
-              <input ref={emailRef} type="email" defaultValue="alex.johnson@company.com"
-                className="w-full px-3.5 py-2.5 rounded-xl border border-white/10 text-white placeholder-slate-600 focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
-                style={{ backgroundColor: "rgba(255,255,255,0.06)" }} />
-            </div>
-            <div>
-              <label className="block text-[11px] text-slate-500 mb-1.5">Password</label>
-              <input ref={passwordRef} type="password" defaultValue="demo-password"
-                className="w-full px-3.5 py-2.5 rounded-xl border border-white/10 text-white placeholder-slate-600 focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
-                style={{ backgroundColor: "rgba(255,255,255,0.06)" }} />
-            </div>
-            <div className="flex items-center justify-between text-xs">
-              <label className="flex items-center gap-2 text-slate-500 cursor-pointer">
-                <input type="checkbox" className="accent-blue-500 w-3 h-3" defaultChecked />
-                Remember me
-              </label>
-              <button type="button" className="text-blue-400 hover:text-blue-300 transition-colors">Forgot?</button>
-            </div>
-            <button type="submit" disabled={loading}
-              className="w-full py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-sm transition-colors shadow-lg shadow-blue-600/25 disabled:opacity-70 flex items-center justify-center gap-2">
-              {loading
-                ? <><span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />Signing in...</>
-                : "Sign In"}
-            </button>
-          </form>
-          <p className="text-center text-[11px] text-slate-600 mt-4">Demo credentials pre-filled</p>
-        </div>
-      </div>
-    </div>
-  );
+  name: string;
+  email: string;
+  phone: string;
+  role: string;
+  avatar: string;
+  avatarUrl: string | null;
+  company: string | null;
 }
 
 export default function App() {
-  const [isLoggedIn,    setIsLoggedIn]    = useState(false);
-  const [theme,         setTheme]         = useState<Theme>("light");
+  const [isLoggedIn,    setIsLoggedIn]    = useState(() => {
+    const t = getToken();
+    // An admin token leaked into this app (e.g. via the role-redirect on a
+    // shared browser) must not silently sign an admin into the user dashboard.
+    if (t && isAdminToken(t)) { clearAuth(); return false; }
+    return !!t;
+  });
+  const [authScreen,    setAuthScreen]    = useState<"login" | "signup">("login");
+  const [prefs,         setPrefs]         = useState<Preferences>(() => {
+    try {
+      const cachedTheme = localStorage.getItem("subl-theme") as ThemePref | null;
+      if (cachedTheme) return { ...DEFAULT_PREFERENCES, theme: cachedTheme };
+    } catch {}
+    return DEFAULT_PREFERENCES;
+  });
+  const [systemDark,    setSystemDark]    = useState(prefersDark);
   const [activeRoute,   setActiveRoute]   = useState<Route>("Dashboard");
   const [isAssessing,   setIsAssessing]   = useState(false);
-  const [notifications, setNotifications] = useState(initialNotifications);
+  const [assessmentResult, setAssessmentResult] = useState<AssessmentResult | null>(() => {
+    try {
+      const saved = localStorage.getItem("subl-last-assessment");
+      if (saved) return JSON.parse(saved) as AssessmentResult;
+    } catch {}
+    return null;
+  });
+  const [notifications, setNotifications] = useState<AppNotification[]>([]);
   const [dateFilter,    setDateFilter]    = useState<DateFilter>("Today");
-  const [habits,        setHabits]        = useState<Habit[]>(defaultHabits);
+  const [currentStress, setCurrentStress] = useState<CurrentStress | null>(null);
+  // Start blank — real identity is loaded from /users/me below. We never seed a
+  // mock user, so a brand-new account never sees someone else's name/details.
   const [user, setUser] = useState<UserProfile>({
-    name:   currentUser.name,
-    email:  currentUser.email,
-    phone:  currentUser.phone,
-    role:   currentUser.role,
-    avatar: currentUser.avatar,
+    name:   "",
+    email:  "",
+    phone:  "",
+    role:   "",
+    avatar: "",
+    avatarUrl: null,
+    company: null,
   });
 
   useEffect(() => {
-    const saved = localStorage.getItem("subl-theme") as Theme | null;
-    const prefersDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
-    const init = saved ?? (prefersDark ? "dark" : "light");
-    setTheme(init);
-    if (init === "dark") document.documentElement.classList.add("dark");
+    if (!isLoggedIn) return;
+    Promise.all([userApi.getMe(), userApi.getProfile()])
+      .then(([me, profile]) => {
+        setUser({
+          name:   `${me.firstName} ${me.lastName}`,
+          email:  me.email,
+          phone:  profile.phoneNumber ?? "",
+          role:   profile.displayJobTitle ?? me.accountType,
+          avatar: `${me.firstName[0]}${me.lastName[0]}`.toUpperCase(),
+          avatarUrl: profile.avatarUrl ?? null,
+          company: me.companyName ?? null,
+        });
+      })
+      .catch(() => {});
+  }, [isLoggedIn]);
+
+  useEffect(() => {
+    if (!isLoggedIn) return;
+    const load = () =>
+      notificationsApi.list(1, 20)
+        .then(r => setNotifications(r.items))
+        .catch(() => {});
+    load();
+    const id = setInterval(load, 60_000);
+    return () => clearInterval(id);
+  }, [isLoggedIn]);
+
+  useEffect(() => {
+    if (!isLoggedIn) return;
+    const load = () => stressApi.getCurrent().then(setCurrentStress).catch(() => {});
+    load();
+    const id = setInterval(load, 30_000);
+    return () => clearInterval(id);
+  }, [isLoggedIn]);
+
+  // Load the real most-recent assessment from the backend on login (the local
+  // copy is only a fast cache for first paint).
+  useEffect(() => {
+    if (!isLoggedIn) return;
+    surveyApi.history()
+      .then(rows => {
+        const latest = rows[0];
+        if (!latest) {
+          // This account has never taken an assessment. Drop any cached value
+          // left in this browser by a previous user so a new sign-up never sees
+          // a phantom "last assessment" score that isn't theirs.
+          setAssessmentResult(null);
+          try { localStorage.removeItem("subl-last-assessment"); } catch {}
+          return;
+        }
+        const score = Math.min(100, Math.max(0, Math.round((latest.totalScore / latest.maxScore) * 100)));
+        const r: AssessmentResult = { score, level: latest.level, takenAt: latest.submittedAt };
+        setAssessmentResult(r);
+        try { localStorage.setItem("subl-last-assessment", JSON.stringify(r)); } catch {}
+      })
+      .catch(() => {});
+  }, [isLoggedIn]);
+
+  // Auto-claim the running monitoring agent on login so the dashboard starts
+  // receiving data with no manual step. Silently no-ops when nothing is online
+  // or another user already owns the live device.
+  useEffect(() => {
+    if (!isLoggedIn) return;
+    devicesApi.autoClaim()
+      .then(r => {
+        if (r.claimed && r.deviceName) {
+          toast.success(`Now receiving data from ${r.deviceName}`);
+        }
+      })
+      .catch(() => {});
+  }, [isLoggedIn]);
+
+  // Load server-side preferences once authenticated (theme, language, tz, date
+  // format) so they follow the account across devices/browsers.
+  useEffect(() => {
+    if (!isLoggedIn) return;
+    preferencesApi.get()
+      .then(p => {
+        setPrefs(p);
+        try { localStorage.setItem("subl-theme", p.theme); } catch {}
+      })
+      .catch(() => {});
+  }, [isLoggedIn]);
+
+  // Track OS scheme so "system" theme stays live.
+  useEffect(() => {
+    const mq = window.matchMedia("(prefers-color-scheme: dark)");
+    const onChange = () => setSystemDark(mq.matches);
+    mq.addEventListener("change", onChange);
+    return () => mq.removeEventListener("change", onChange);
   }, []);
 
-  const toggleTheme = () => {
-    const next: Theme = theme === "light" ? "dark" : "light";
-    setTheme(next);
-    localStorage.setItem("subl-theme", next);
-    next === "dark"
-      ? document.documentElement.classList.add("dark")
-      : document.documentElement.classList.remove("dark");
+  const isDark = prefs.theme === "dark" || (prefs.theme === "system" && systemDark);
+
+  // Apply dark mode only inside the authenticated app. The login/sign-up
+  // screens are a light-only design, so we force <html> light there to avoid
+  // white-on-white text.
+  useEffect(() => {
+    document.documentElement.classList.toggle("dark", isLoggedIn && isDark);
+  }, [isLoggedIn, isDark]);
+
+  // Apply language direction + lang attribute on <html> so the whole app
+  // (including Tailwind's logical spacing) flips for Arabic (RTL).
+  useEffect(() => {
+    const ar = (prefs.language ?? "").toLowerCase().startsWith("ar");
+    document.documentElement.dir = isLoggedIn && ar ? "rtl" : "ltr";
+    document.documentElement.lang = isLoggedIn && ar ? "ar" : "en";
+  }, [isLoggedIn, prefs.language]);
+
+  const updatePreferences = (next: Preferences) => {
+    setPrefs(next);
+    try { localStorage.setItem("subl-theme", next.theme); } catch {}
+    preferencesApi.update(next).catch(() => {});
   };
 
-  const habitCompletionRate = habits.length > 0
-    ? Math.round(habits.filter((h) => h.completed).length / habits.length * 100)
-    : 0;
+  const toggleTheme = () => {
+    updatePreferences({ ...prefs, theme: isDark ? "light" : "dark" });
+  };
 
   const handleLogout = () => {
     toast.success(`See you tomorrow, ${user.name.split(" ")[0]}!`);
-    setTimeout(() => { setIsLoggedIn(false); setActiveRoute("Dashboard"); }, 900);
+    // Wipe per-user cached state so the next account on this browser starts
+    // clean (no leftover assessment score, name or avatar).
+    try { localStorage.removeItem("subl-last-assessment"); } catch {}
+    setAssessmentResult(null);
+    setUser({ name: "", email: "", phone: "", role: "", avatar: "", avatarUrl: null, company: null });
+    setTimeout(() => { setIsLoggedIn(false); setAuthScreen("login"); setActiveRoute("Dashboard"); }, 900);
   };
 
   if (!isLoggedIn) {
     return (
       <>
         <Toaster position="top-right" richColors />
-        <LoginScreen onLogin={() => setIsLoggedIn(true)} />
+        {authScreen === "signup" ? (
+          <SignUpScreen onGoLogin={() => setAuthScreen("login")} />
+        ) : (
+          <LoginScreen
+            onLogin={() => setIsLoggedIn(true)}
+            onGoSignUp={() => setAuthScreen("signup")}
+          />
+        )}
       </>
     );
   }
 
   return (
+    <PreferencesProvider prefs={prefs}>
     <div className="min-h-screen bg-slate-50 dark:bg-slate-950">
       <Toaster position="top-right" richColors />
-      {isAssessing && <AssessmentModal onClose={() => setIsAssessing(false)} />}
+      {isAssessing && (
+        <AssessmentModal
+          onClose={() => setIsAssessing(false)}
+          onComplete={(r) => {
+            setAssessmentResult(r);
+            try { localStorage.setItem("subl-last-assessment", JSON.stringify(r)); } catch {}
+          }}
+        />
+      )}
 
       <Sidebar
         activeRoute={activeRoute} setActiveRoute={setActiveRoute}
         user={user} onLogout={handleLogout}
       />
       <Header
-        theme={theme} toggleTheme={toggleTheme}
+        theme={isDark ? "dark" : "light"} toggleTheme={toggleTheme}
         notifications={notifications} setNotifications={setNotifications}
         user={user} onLogout={handleLogout}
-        onStartAssessment={() => setIsAssessing(true)}
         activeRoute={activeRoute} setActiveRoute={setActiveRoute}
       />
 
       <main className="md:ml-60 pt-14 pb-16 md:pb-0 min-h-screen">
         <div className="px-4 py-4 md:px-8 md:py-6 max-w-[1600px] mx-auto">
-          {activeRoute === "Dashboard" && (
+          {/* All pages stay mounted; we only hide the inactive ones. This keeps
+              the live keystroke stream (its WebSocket + buffer) and the Subl AI
+              conversation alive instead of being torn down on every tab switch. */}
+          <div className={activeRoute === "Dashboard" ? "" : "hidden"}>
             <Dashboard
-              isDark={theme === "dark"}
+              isDark={isDark}
               onStartAssessment={() => setIsAssessing(true)}
               userName={user.name}
               dateFilter={dateFilter}
               onDateFilterChange={setDateFilter}
-              habitCompletionRate={habitCompletionRate}
+              currentStress={currentStress}
+              assessmentResult={assessmentResult}
             />
-          )}
-          {activeRoute === "Habits" && (
-            <Habits habits={habits} setHabits={setHabits} />
-          )}
-          {activeRoute === "Articles" && <Articles />}
-          {activeRoute === "SublAI"   && <SublAI />}
-          {activeRoute === "Settings" && (
+          </div>
+          <div className={activeRoute === "Habits" ? "" : "hidden"}>
+            <Habits />
+          </div>
+          <div className={activeRoute === "Articles" ? "" : "hidden"}>
+            <Articles />
+          </div>
+          <div className={activeRoute === "SublAI" ? "" : "hidden"}>
+            <SublAI />
+          </div>
+          <div className={activeRoute === "Settings" ? "" : "hidden"}>
             <Settings
               user={user}
-              setUser={(u) => setUser({
+              setUser={(u) => setUser((prev) => ({
                 ...u,
+                company: prev.company,
                 avatar: u.name.split(" ").map((n) => n[0]).join("").slice(0, 2).toUpperCase(),
-              })}
+              }))}
+              preferences={prefs}
+              onUpdatePreferences={updatePreferences}
             />
-          )}
+          </div>
         </div>
       </main>
 
       <BottomNav activeRoute={activeRoute} setActiveRoute={setActiveRoute} />
     </div>
+    </PreferencesProvider>
   );
 }

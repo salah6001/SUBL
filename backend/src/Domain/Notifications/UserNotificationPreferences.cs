@@ -230,6 +230,12 @@ public sealed class UserNotificationPreferences : Entity
             channels |= NotificationChannel.Sms;
         }
 
+        // Slack is delivered to a single team webhook configured server-side, so
+        // there is no per-user opt-out column for it. Always include it here; it
+        // only actually fires when the notification type opts into Slack AND the
+        // server has a Slack webhook configured (channel.IsAvailable).
+        channels |= NotificationChannel.Slack;
+
         return channels;
     }
 }

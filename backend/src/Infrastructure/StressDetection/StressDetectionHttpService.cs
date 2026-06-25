@@ -74,11 +74,14 @@ internal sealed class StressDetectionHttpService(
                     ErrorMessage: "Empty response body from ML service");
             }
 
+            string? emotion = ExtractDominantEmotion(result.Metadata);
+
             return new StressPredictionResult(
                 IsSuccess: true,
                 Score: result.Score,
                 Confidence: result.Confidence,
                 ModelVersion: string.IsNullOrWhiteSpace(result.ModelVersion) ? "unknown" : result.ModelVersion,
+                Emotion: emotion,
                 Label: result.Label,
                 ErrorMessage: null,
                 RawJsonMetadata: result.Metadata);
@@ -120,6 +123,30 @@ internal sealed class StressDetectionHttpService(
         {
             return false;
         }
+    }
+
+    private static string? ExtractDominantEmotion(string? metadata)
+    {
+        if (string.IsNullOrEmpty(metadata))
+        {
+            return null;
+        }
+
+        try
+        {
+            using var doc = JsonDocument.Parse(metadata);
+            if (doc.RootElement.TryGetProperty("dominant", out JsonElement dominant))
+            {
+                string? code = dominant.GetString();
+                return string.IsNullOrEmpty(code) ? null : code;
+            }
+        }
+        catch
+        {
+            // Never throw — emotion is optional enrichment
+        }
+
+        return null;
     }
 
     private static string Truncate(string s, int max) =>

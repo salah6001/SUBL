@@ -123,6 +123,12 @@ public sealed class Account : Entity
         UpdatedAt = DateTime.UtcNow;
     }
 
+    public void Rename(string name)
+    {
+        Name = name;
+        UpdatedAt = DateTime.UtcNow;
+    }
+
     public void Deactivate()
     {
         if (!IsActive)

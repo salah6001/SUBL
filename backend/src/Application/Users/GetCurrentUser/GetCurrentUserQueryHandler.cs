@@ -38,6 +38,29 @@ internal sealed class GetCurrentUserQueryHandler : IQueryHandler<GetCurrentUserQ
             return Result.Failure<UserResponse>(UserErrors.NotFound(_currentUser.UserId));
         }
 
+        // Resolve the user's company via their account membership. A user can
+        // belong to more than one account, so prefer the primary active
+        // contact, then any active one.
+        string? companyName = await _context.AccountContacts
+            .AsNoTracking()
+            .Where(c => c.UserId == user.Id && c.IsActive)
+            .OrderByDescending(c => c.IsPrimaryContact)
+            .Select(c => c.Account!.Name)
+            .FirstOrDefaultAsync(cancellationToken);
+
+        // Single-company product: users (and admins) who aren't linked to an
+        // account contact still see the organisation's name. Fall back to the
+        // primary (earliest-created) account so the company banner shows for
+        // everyone in both dashboards.
+        if (string.IsNullOrEmpty(companyName))
+        {
+            companyName = await _context.Accounts
+                .AsNoTracking()
+                .OrderBy(a => a.CreatedAt)
+                .Select(a => a.Name)
+                .FirstOrDefaultAsync(cancellationToken);
+        }
+
         return new UserResponse
         {
             Id = user.Id,
@@ -47,7 +70,8 @@ internal sealed class GetCurrentUserQueryHandler : IQueryHandler<GetCurrentUserQ
             AccountType = user.AccountType,
             Status = user.Status,
             CreatedAt = user.CreatedAt,
-            LastLoginAt = user.LastLoginAt
+            LastLoginAt = user.LastLoginAt,
+            CompanyName = companyName
         };
     }
 }

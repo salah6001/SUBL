@@ -57,6 +57,35 @@ public interface IStressReadingRepository
         DateTime to,
         TimeSpan bucketSize,
         CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Counts the user's stress readings per <see cref="Domain.StressDetection.StressLevel"/>
+    /// between <paramref name="from"/> and <paramref name="to"/>.
+    /// </summary>
+    Task<List<StressLevelCount>> GetLevelDistributionAsync(
+        Guid userId,
+        DateTime from,
+        DateTime to,
+        CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Returns emotion code → count for readings in the given window.
+    /// Only readings that have a non-null Emotion are included.
+    /// </summary>
+    Task<Dictionary<string, int>> GetEmotionCountsAsync(
+        Guid userId,
+        DateTime from,
+        DateTime to,
+        CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Returns aggregate stress stats (avg score, peak score, session count) for the given window.
+    /// </summary>
+    Task<StressAggregates> GetAggregatesAsync(
+        Guid userId,
+        DateTime from,
+        DateTime to,
+        CancellationToken cancellationToken = default);
 }
 
 /// <summary>
@@ -68,3 +97,19 @@ public sealed record StressTrendBucket(
     double AverageScore,
     double PeakScore,
     int ReadingsCount);
+
+/// <summary>
+/// The number of readings recorded at a given stress level.
+/// </summary>
+public sealed record StressLevelCount(
+    Domain.StressDetection.StressLevel Level,
+    int Count);
+
+/// <summary>
+/// Aggregate stress statistics over a time window.
+/// </summary>
+public sealed record StressAggregates(
+    int TotalReadings,
+    int TotalSessions,
+    double AvgScore,
+    double PeakScore);

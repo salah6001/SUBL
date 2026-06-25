@@ -16,13 +16,8 @@ public sealed class UpdatePreferencesCommandValidator : AbstractValidator<Update
             .MaximumLength(100).WithMessage("Timezone must not exceed 100 characters")
             .When(x => !string.IsNullOrEmpty(x.QuietHoursTimezone));
 
-        When(x => x.QuietHoursEnabled, () =>
-        {
-            RuleFor(x => x.QuietHoursStart)
-                .NotNull().WithMessage("Quiet hours start time is required when quiet hours are enabled");
-
-            RuleFor(x => x.QuietHoursEnd)
-                .NotNull().WithMessage("Quiet hours end time is required when quiet hours are enabled");
-        });
+        // Note: start/end are no longer required here. With partial updates a
+        // client may flip quiet hours on with a single toggle; the handler fills
+        // in a sensible default window (and its own existing values) when needed.
     }
 }

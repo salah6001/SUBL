@@ -28,6 +28,12 @@ public interface IDeviceRepository
     Task<List<Device>> GetByUserIdAsync(Guid userId, CancellationToken cancellationToken = default);
 
     /// <summary>
+    /// Returns all active devices across all users. Used to present the list of
+    /// machines a user may claim (point at their own dashboard).
+    /// </summary>
+    Task<List<Device>> GetAllActiveAsync(CancellationToken cancellationToken = default);
+
+    /// <summary>
     /// Adds a new device.
     /// </summary>
     void Add(Device device);

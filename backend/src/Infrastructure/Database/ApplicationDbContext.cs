@@ -1,10 +1,16 @@
 ﻿using Application.Abstractions.Data;
 using Domain.Accounts;
+using Domain.Alerts;
+using Domain.Articles;
 using Domain.AuditLogs;
+using Domain.DeviceSettings;
+using Domain.Habits;
 using Domain.Notifications;
 using Domain.Permissions;
+using Domain.Privacy;
 using Domain.StressDetection;
 using Domain.Subscriptions;
+using Domain.Surveys;
 using Domain.Users;
 using Infrastructure.DomainEvents;
 using Microsoft.EntityFrameworkCore;
@@ -55,6 +61,27 @@ public sealed class ApplicationDbContext(
     public DbSet<StressSession> StressSessions { get; set; }
     public DbSet<KeyboardMetrics> KeyboardMetrics { get; set; }
     public DbSet<StressReading> StressReadings { get; set; }
+
+    // Habits
+    public DbSet<Habit> Habits { get; set; }
+    public DbSet<HabitCompletion> HabitCompletions { get; set; }
+
+    // Articles
+    public DbSet<Article> Articles { get; set; }
+
+    // Privacy
+    public DbSet<UserPrivacySettings> UserPrivacySettings { get; set; }
+
+    // Device Settings
+    public DbSet<UserDeviceSettings> UserDeviceSettings { get; set; }
+
+    // Surveys
+    public DbSet<SurveyQuestion> SurveyQuestions { get; set; }
+    public DbSet<SurveyResponse> SurveyResponses { get; set; }
+    public DbSet<SurveyAnswer> SurveyAnswers { get; set; }
+
+    // Alerts
+    public DbSet<StressAlert> StressAlerts { get; set; }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
