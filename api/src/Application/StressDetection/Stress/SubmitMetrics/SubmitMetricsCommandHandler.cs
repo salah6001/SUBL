@@ -103,8 +103,7 @@ internal sealed class SubmitMetricsCommandHandler(
             prediction.Score,
             prediction.Confidence,
             prediction.ModelVersion,
-            prediction.RawJsonMetadata,
-            prediction.Emotion);
+            prediction.RawJsonMetadata);
 
         stressRepository.AddMetrics(metrics);
         stressRepository.AddReading(reading);
@@ -144,8 +143,7 @@ internal sealed class SubmitMetricsCommandHandler(
             reading.Id,
             reading.Score,
             reading.Level.ToString(),
-            reading.Confidence,
-            reading.Emotion);
+            reading.Confidence);
 
         return Result.Success(response);
     }

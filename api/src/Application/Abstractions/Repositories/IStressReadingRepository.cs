@@ -69,16 +69,6 @@ public interface IStressReadingRepository
         CancellationToken cancellationToken = default);
 
     /// <summary>
-    /// Returns emotion code → count for readings in the given window.
-    /// Only readings that have a non-null Emotion are included.
-    /// </summary>
-    Task<Dictionary<string, int>> GetEmotionCountsAsync(
-        Guid userId,
-        DateTime from,
-        DateTime to,
-        CancellationToken cancellationToken = default);
-
-    /// <summary>
     /// Returns aggregate stress stats (avg score, peak score, session count) for the given window.
     /// </summary>
     Task<StressAggregates> GetAggregatesAsync(

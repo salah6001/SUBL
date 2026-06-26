@@ -11,15 +11,6 @@ internal sealed class GetStressSummaryQueryHandler(
     ICurrentUserService currentUserService)
     : IQueryHandler<GetStressSummaryQuery, StressSummaryResponse>
 {
-    private static readonly Dictionary<string, string> EmotionLabels = new()
-    {
-        ["A"] = "Angry",
-        ["C"] = "Calm",
-        ["H"] = "Happy",
-        ["N"] = "Neutral",
-        ["S"] = "Sad"
-    };
-
     public async Task<Result<StressSummaryResponse>> Handle(
         GetStressSummaryQuery request,
         CancellationToken cancellationToken)
@@ -29,24 +20,12 @@ internal sealed class GetStressSummaryQueryHandler(
         StressAggregates aggregates = await stressRepository.GetAggregatesAsync(
             userId, request.From, request.To, cancellationToken);
 
-        Dictionary<string, int> emotionCounts = await stressRepository.GetEmotionCountsAsync(
-            userId, request.From, request.To, cancellationToken);
-
-        string dominantCode = "";
-        string dominantLabel = "";
-        if (emotionCounts.Count > 0)
-        {
-            dominantCode = emotionCounts.MaxBy(kv => kv.Value).Key;
-            EmotionLabels.TryGetValue(dominantCode, out dominantLabel!);
-            dominantLabel ??= dominantCode;
-        }
-
         var response = new StressSummaryResponse(
             TotalSessions: aggregates.TotalSessions,
             AvgStress: Math.Round(aggregates.AvgScore * 100, 1),
             PeakStress: Math.Round(aggregates.PeakScore * 100, 1),
-            DominantEmotion: dominantCode,
-            DominantLabel: dominantLabel,
+            DominantEmotion: string.Empty,
+            DominantLabel: string.Empty,
             HiddenStressCount: 0);
 
         return Result.Success(response);

@@ -1481,11 +1481,6 @@ namespace Infrastructure.Database.Migrations
                         .HasColumnType("character varying(20)")
                         .HasColumnName("level");
 
-                    b.Property<string>("Emotion")
-                        .HasMaxLength(1)
-                        .HasColumnType("character varying(1)")
-                        .HasColumnName("emotion");
-
                     b.Property<string>("Metadata")
                         .HasColumnType("text")
                         .HasColumnName("metadata");
@@ -1527,9 +1522,6 @@ namespace Infrastructure.Database.Migrations
 
                     b.HasIndex("UserId", "Level", "CreatedAt")
                         .HasDatabaseName("ix_stress_readings_user_id_level_created_at");
-
-                    b.HasIndex("UserId", "Emotion", "CreatedAt")
-                        .HasDatabaseName("ix_stress_readings_user_id_emotion_created_at");
 
                     b.ToTable("stress_readings", "public");
                 });

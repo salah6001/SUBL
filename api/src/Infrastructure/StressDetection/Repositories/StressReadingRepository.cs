@@ -134,23 +134,6 @@ internal sealed class StressReadingRepository(ApplicationDbContext context) : IS
         return counts;
     }
 
-    public async Task<Dictionary<string, int>> GetEmotionCountsAsync(
-        Guid userId,
-        DateTime from,
-        DateTime to,
-        CancellationToken cancellationToken = default)
-    {
-        return await context.StressReadings
-            .AsNoTracking()
-            .Where(r => r.UserId == userId &&
-                        r.CreatedAt >= from &&
-                        r.CreatedAt <= to &&
-                        r.Emotion != null)
-            .GroupBy(r => r.Emotion!)
-            .Select(g => new { Code = g.Key, Count = g.Count() })
-            .ToDictionaryAsync(x => x.Code, x => x.Count, cancellationToken);
-    }
-
     public async Task<StressAggregates> GetAggregatesAsync(
         Guid userId,
         DateTime from,

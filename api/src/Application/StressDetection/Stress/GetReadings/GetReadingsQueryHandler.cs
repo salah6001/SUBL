@@ -35,7 +35,6 @@ internal sealed class GetReadingsQueryHandler(
                 r.Level.ToString(),
                 r.Confidence,
                 r.ModelVersion,
-                r.Emotion,
                 r.CreatedAt))
             .ToList();
 

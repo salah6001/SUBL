@@ -38,7 +38,6 @@ internal sealed class GetSessionByIdQueryHandler(
                 r.Level.ToString(),
                 r.Confidence,
                 r.ModelVersion,
-                r.Emotion,
                 r.CreatedAt))
             .ToList();
 

@@ -10,7 +10,6 @@ public sealed record StressReadingResponse(
     string Level,
     double Confidence,
     string ModelVersion,
-    string? Emotion,
     DateTime CreatedAt);
 
 /// <summary>
@@ -22,8 +21,7 @@ public sealed record SubmitMetricsResponse(
     Guid ReadingId,
     double Score,
     string Level,
-    double Confidence,
-    string? Emotion = null);
+    double Confidence);
 
 /// <summary>
 /// Aggregated KPIs for the GET /stress/summary endpoint.
