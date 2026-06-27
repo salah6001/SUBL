@@ -1,0 +1,407 @@
+% =====================================================================
+%  Subl - Graduation Project Book
+%  Chapter: Backend Service & Desktop Agent
+%
+%  A standalone, compilable application of docs/spec.md.
+%  Build:  pdflatex documentation-chapter.tex   (run twice)
+%  Drop the preamble into your main book and keep from \section onward.
+% =====================================================================
+\documentclass[11pt,a4paper]{article}
+
+\usepackage[T1]{fontenc}
+\usepackage[utf8]{inputenc}
+\usepackage{lmodern}
+\usepackage[margin=2.4cm]{geometry}
+\usepackage{xcolor}
+\usepackage{listings}
+\usepackage[most]{tcolorbox}
+\tcbuselibrary{listingsutf8}
+
+% ---- palette ----------------------------------------------------------
+\definecolor{codebg}{HTML}{F7F8FA}
+\definecolor{codeframe}{HTML}{D9DEE4}
+\definecolor{kw}{HTML}{0B5FFF}
+\definecolor{str}{HTML}{0A7D38}
+\definecolor{cmt}{HTML}{7A8794}
+\definecolor{num}{HTML}{9AA4AF}
+\definecolor{accent}{HTML}{3578FF}   % Subl blue
+\definecolor{banner}{HTML}{1F2933}
+
+% ---- base listing style ----------------------------------------------
+\lstdefinestyle{subl}{
+  backgroundcolor=\color{codebg},
+  basicstyle=\ttfamily\footnotesize\color{black!88},
+  keywordstyle=\color{kw}\bfseries,
+  stringstyle=\color{str},
+  commentstyle=\color{cmt}\itshape,
+  numberstyle=\tiny\color{num},
+  numbers=left, numbersep=10pt,
+  frame=single, rulecolor=\color{codeframe},
+  framesep=6pt, xleftmargin=16pt, xrightmargin=4pt,
+  breaklines=true, breakatwhitespace=true,
+  showstringspaces=false, tabsize=2,
+  columns=fullflexible, keepspaces=true, upquote=true,
+}
+\lstdefinestyle{csharp}{style=subl,language=[Sharp]C,
+  morekeywords={record,var,async,await,sealed,internal,Result,Guid}}
+\lstdefinestyle{python}{style=subl,language=Python,
+  morekeywords={Protocol,Optional}}
+
+% ---- filename banner shown above each listing ------------------------
+\newcommand{\codefile}[1]{%
+  \par\noindent
+  \colorbox{banner}{\makebox[\linewidth][l]{%
+    \ttfamily\footnotesize\color{white}\hspace{2pt}\#\ #1}}%
+  \par\vspace{-2pt}}
+
+% ---- the Explanation box: keeps prose visibly separate from code -----
+\newtcolorbox{explain}{
+  enhanced, breakable,
+  colback=accent!4, colframe=accent,
+  boxrule=0pt, leftrule=3pt,
+  arc=2pt, left=10pt, right=8pt, top=6pt, bottom=6pt,
+  fonttitle=\bfseries\small\color{accent},
+  title={Explanation},
+  before skip=4pt, after skip=14pt,
+}
+
+\begin{document}
+
+% =====================================================================
+\section*{Backend Service}
+\addcontentsline{toc}{section}{Backend Service}
+
+The backend is a .NET~8 Web API built on Clean Architecture and organised as
+\emph{vertical slices}: each feature lives in its own folder containing a
+command, a handler, and a validator. The solution is split into four layers ---
+\textbf{Domain} (entities and rules, framework-free), \textbf{Application}
+(use cases), \textbf{Infrastructure} (database, e-mail, ML and real-time
+adapters), and \textbf{Web.Api} (HTTP endpoints). Dependencies point inward
+only: outer layers know the domain, never the reverse.
+
+\begin{figure}[h]\centering
+  % \includegraphics[width=.8\linewidth]{figures/backend-layers.pdf}
+  \fbox{\parbox{.8\linewidth}{\centering\vspace{1.2cm}
+  \textit{Figure placeholder: Web.Api $\rightarrow$ Application $\rightarrow$
+  Domain, with Infrastructure plugged in at the edges.}\vspace{1.2cm}}}
+  \caption{Backend layers and dependency direction (inward only).}
+\end{figure}
+
+% ---- Segment 1: Result -----------------------------------------------
+\subsection*{Explicit results instead of exceptions}
+
+The backend never throws exceptions for expected failures; every operation
+returns an explicit \texttt{Result} that the caller must inspect.
+
+\codefile{api/src/SharedKernel/Result.cs}
+\begin{lstlisting}[style=csharp]
+public class Result
+{
+    public bool IsSuccess { get; }
+    public bool IsFailure => !IsSuccess;
+    public Error Error { get; }
+
+    public static Result Success() => new(true, Error.None);
+    public static Result<TValue> Success<TValue>(TValue value) =>
+        new(value, true, Error.None);
+    public static Result Failure(Error error) => new(false, error);
+    public static Result<TValue> Failure<TValue>(Error error) =>
+        new(default, false, error);
+}
+\end{lstlisting}
+
+\begin{explain}
+\texttt{Result} makes success and failure first-class values rather than
+control flow. A handler returns \texttt{Result.Failure(error)} instead of
+throwing, and the API layer maps the error to the right HTTP status in one
+place. This keeps the domain free of HTTP concerns and makes every failure
+path explicit and testable.
+\end{explain}
+
+% ---- Segment 2: a vertical slice -------------------------------------
+\subsection*{The shape of a feature: one vertical slice}
+
+Every use case is three small files. We show one slice in full --- submitting a
+stress survey --- because the other sixty features in the codebase follow the
+same shape. First the \emph{command} (the request) and its \emph{validator}
+(structural rules):
+
+\codefile{api/src/Application/Surveys/SubmitSurveyResponse/SubmitSurveyResponseCommand.cs}
+\begin{lstlisting}[style=csharp]
+public sealed record SurveyAnswerInput(Guid QuestionId, int Value);
+
+public sealed record SubmitSurveyResponseCommand(
+    IReadOnlyList<SurveyAnswerInput> Answers) : ICommand<SurveyResultResponse>;
+\end{lstlisting}
+
+\codefile{api/src/Application/Surveys/SubmitSurveyResponse/SubmitSurveyResponseCommandValidator.cs}
+\begin{lstlisting}[style=csharp]
+RuleFor(c => c.Answers).NotEmpty();
+RuleForEach(c => c.Answers).ChildRules(answer =>
+{
+    answer.RuleFor(a => a.QuestionId).NotEmpty();
+    answer.RuleFor(a => a.Value)
+          .InclusiveBetween(0, SurveyResponse.MaxAnswerValue);
+});
+\end{lstlisting}
+
+Then the \emph{handler} carries the business rules and persists the result:
+
+\codefile{api/src/Application/Surveys/SubmitSurveyResponse/SubmitSurveyResponseCommandHandler.cs}
+\begin{lstlisting}[style=csharp]
+// Every answered question must be a known active question.
+if (!answeredSet.IsSubsetOf(activeSet))
+    return Result.Failure<SurveyResultResponse>(SurveyErrors.UnknownQuestions);
+
+// Every active question must be answered exactly once.
+if (answeredSet.Count != activeSet.Count ||
+    request.Answers.Count != activeSet.Count)
+    return Result.Failure<SurveyResultResponse>(SurveyErrors.MissingAnswers);
+
+var response = SurveyResponse.Create(currentUserService.UserId, answers);
+context.SurveyResponses.Add(response);
+await context.SaveChangesAsync(cancellationToken);
+return Result.Success(result);
+\end{lstlisting}
+
+\begin{explain}
+The command is a plain immutable record; the validator enforces \emph{shape}
+(non-empty, each answer in range $0$--$4$); the handler enforces \emph{meaning}
+(all active questions answered exactly once) and delegates scoring to the
+domain via \texttt{SurveyResponse.Create}. Because each slice is self-contained,
+a feature can be read, tested, and changed without touching the rest of the
+system --- this is the single most repeated pattern in the backend.
+\end{explain}
+
+% ---- Segment 3: the cross-system contract ----------------------------
+\subsection*{The contract with the desktop agent}
+
+This endpoint is the seam between the three systems: the desktop agent posts a
+batch of six keyboard features, the handler forwards them to the Python ML
+service, and the resulting stress reading is stored.
+
+\codefile{api/src/Web.Api/Endpoints/Stress/SubmitMetrics.cs}
+\begin{lstlisting}[style=csharp]
+public sealed record Request(
+    double MeanDwell, double MedianFlight, double CvFlight,
+    double MeanDelFreq, double MeanTotTime, int NKeys,
+    int? DeleteCount, DateTimeOffset? CapturedAt);
+
+app.MapPost("stress-sessions/{sessionId:guid}/metrics", async (
+    Guid sessionId, Request request,
+    ICommandHandler<SubmitMetricsCommand, SubmitMetricsResponse> handler,
+    CancellationToken ct) =>
+{
+    var command = new SubmitMetricsCommand(sessionId, request.MeanDwell,
+        request.MedianFlight, request.CvFlight, request.MeanDelFreq,
+        request.MeanTotTime, request.NKeys, request.DeleteCount,
+        request.CapturedAt?.UtcDateTime);
+
+    Result<SubmitMetricsResponse> result = await handler.Handle(command, ct);
+    return result.Match(Results.Ok, CustomResults.Problem);
+})
+.RequireAuthorization();
+\end{lstlisting}
+
+\begin{explain}
+The endpoint is deliberately thin: it only maps the wire format to a command
+and translates the \texttt{Result} into HTTP (\texttt{200} on success, a
+problem response on failure). The field names match the agent's camelCase JSON
+exactly, so the contract between the two systems is visible in one place. All
+real work --- calling the ML model and persisting the reading --- lives in the
+handler, keeping transport and logic separate.
+\end{explain}
+
+% ---- Segment 4: cross-cutting concern --------------------------------
+\subsection*{Validation as a cross-cutting decorator}
+
+Validators are never called by hand. A decorator wraps every command handler
+and runs validation before the handler executes.
+
+\codefile{api/src/Application/Abstractions/Behaviors/ValidationDecorator.cs}
+\begin{lstlisting}[style=csharp]
+public async Task<Result<TResponse>> Handle(
+    TCommand command, CancellationToken cancellationToken)
+{
+    ValidationFailure[] failures = await ValidateAsync(command, validators);
+
+    if (failures.Length == 0)
+        return await innerHandler.Handle(command, cancellationToken);
+
+    return Result.Failure<TResponse>(CreateValidationError(failures));
+}
+\end{lstlisting}
+
+\begin{explain}
+The decorator implements the same \texttt{ICommandHandler} interface it wraps,
+so it is transparent to callers. If validation passes it forwards to the inner
+handler; otherwise it short-circuits with a \texttt{Result.Failure}. Validation
+thus becomes a cross-cutting concern configured once in the dependency-injection
+pipeline, instead of boilerplate repeated in every handler.
+\end{explain}
+
+% ---- Segment 5: real-world resilience --------------------------------
+\subsection*{Healing abandoned sessions}
+
+A desktop agent can crash or lose connectivity mid-session, leaving a session
+that never ends and blocks new ones. A background service reclaims them.
+
+\codefile{api/src/Infrastructure/StressDetection/BackgroundServices/AbandonedSessionCleanupService.cs}
+\begin{lstlisting}[style=csharp]
+private static readonly TimeSpan AbandonAfter = TimeSpan.FromMinutes(15);
+
+private async Task CleanupOnceAsync(CancellationToken ct)
+{
+    DateTime cutoff = DateTime.UtcNow - AbandonAfter;
+    List<StressSession> stale =
+        await sessionRepository.GetStaleActiveAsync(cutoff, ct);
+
+    if (stale.Count == 0) return;
+
+    foreach (StressSession session in stale)
+        session.MarkAsAbandoned();
+
+    await unitOfWork.SaveChangesAsync(ct);
+}
+\end{lstlisting}
+
+\begin{explain}
+Running every five minutes, the service finds active or paused sessions whose
+last activity is older than fifteen minutes and marks them
+\texttt{Abandoned} through a domain method, not a raw database write. This
+prevents an ``active session lock'' from blocking a user forever if their agent
+dies --- a small but essential piece of real-world resilience.
+\end{explain}
+
+% =====================================================================
+\section*{Desktop Agent}
+\addcontentsline{toc}{section}{Desktop Agent}
+
+The desktop agent is a Python application that follows the \emph{same} Clean
+Architecture layout as the backend (\texttt{domain}, \texttt{application},
+\texttt{infrastructure}, \texttt{presentation}). It captures keystroke
+\emph{timing} --- never the keys themselves --- aggregates six statistical
+features per batch window, and submits them to the backend. The same blueprint
+in a second language keeps the project coherent end to end.
+
+% ---- Segment 1: the boundary -----------------------------------------
+\subsection*{Ports: depending on interfaces, not implementations}
+
+The agent's logic depends only on interfaces. Every boundary it needs is
+declared as a Python \texttt{Protocol}.
+
+\codefile{desktop-agent/subl\_agent/application/ports.py}
+\begin{lstlisting}[style=python]
+class ApiGateway(Protocol):
+    def login(self, email: str, password: str) -> Tokens: ...
+    def register_device(self, profile: DeviceProfile) -> str: ...
+    def start_session(self, device_id: str, notes: Optional[str]) -> str: ...
+    def submit_metrics(self, session_id: str, features: dict) -> Reading: ...
+\end{lstlisting}
+
+\begin{explain}
+\texttt{ApiGateway} is the seam between the agent's logic and the network.
+Services depend on this protocol, so the real HTTP client can be swapped for a
+fake in tests without touching business code. This mirrors the backend's use of
+interfaces and keeps the two systems' architecture identical despite being
+written in different languages.
+\end{explain}
+
+% ---- Segment 2: the novel core ---------------------------------------
+\subsection*{Capturing keystroke dynamics (the core)}
+
+This is the heart of the project. As keys are pressed and released, the monitor
+records two timings: \emph{flight} (gap between consecutive key-downs) and
+\emph{dwell} (how long a key is held). Implausible values are discarded.
+
+\codefile{desktop-agent/subl\_agent/infrastructure/keyboard/pynput\_monitor.py}
+\begin{lstlisting}[style=python]
+def _on_press(self, key) -> None:
+    now = _now_ms()
+    with self._lock:
+        if self._last_keydown_ms is not None:
+            gap = now - self._last_keydown_ms
+            if 0 < gap < self._max_reasonable_flight_ms:
+                self._flight_ms.append(gap)        # flight time
+        self._last_keydown_ms = now
+        if kid not in self._press_times:
+            self._press_times[kid] = now
+            self._total_keystrokes += 1
+            if is_del:
+                self._delete_count += 1
+\end{lstlisting}
+
+Once a batch window closes, the raw timings are reduced to the six features the
+ML model expects:
+
+\codefile{desktop-agent/subl\_agent/infrastructure/keyboard/pynput\_monitor.py}
+\begin{lstlisting}[style=python]
+mean_dwell    = statistics.mean(self._dwell_ms)
+median_flight = statistics.median(self._flight_ms)
+cv_flight     = statistics.stdev(self._flight_ms) / mean  # coeff. of variation
+mean_del_freq = (self._delete_count / self._total_keystrokes) * 100.0
+mean_tot_time = _now_ms() - self._first_keydown_ms
+
+features = {
+    "meanDwell": round(mean_dwell, 2),     "medianFlight": round(median_flight, 2),
+    "cvFlight": round(cv_flight, 4),        "meanDelFreq": round(mean_del_freq, 2),
+    "meanTotTime": round(mean_tot_time, 2), "nKeys": self._total_keystrokes,
+}
+\end{lstlisting}
+
+\begin{explain}
+Only \emph{timing and counts} ever leave the keyboard --- never the characters
+typed --- which is what makes the system privacy-preserving. All access to the
+shared buffers is guarded by a lock because pynput delivers events on its own
+thread. The six features (dwell, flight, flight variability, deletion rate,
+total time, key count) are exactly the inputs the stress model was trained on,
+so this method defines the contract between agent and model.
+\end{explain}
+
+% ---- Segment 3: lifecycle + resilience -------------------------------
+\subsection*{The session loop and self-healing}
+
+A background thread sends one batch per interval. If the server reports the
+session has expired, the agent transparently starts a new one instead of
+stopping.
+
+\codefile{desktop-agent/subl\_agent/application/services/session\_service.py}
+\begin{lstlisting}[style=python]
+def _sender_loop(self) -> None:
+    while not self._stop_event.wait(self._batch_interval_seconds):
+        self._heartbeat()              # keep the device "online"
+        if self._is_paused:
+            continue
+        self._send_one_batch()
+
+# inside _send_one_batch, when the server returns 404/409:
+if ex.status in (404, 409) and self._auto_restart:
+    new_id = self._api.start_session(self._device_id, "auto-restart after expiry")
+    self._session_id = new_id          # self-heal, keep monitoring
+\end{lstlisting}
+
+\begin{explain}
+The sender loop is driven by \texttt{wait()} on a stop-event, so the thread
+exits promptly when the user stops. A heartbeat is sent every tick --- even
+while paused --- so the backend sees the agent as alive and claimable. The
+\texttt{404/409} branch is the client-side mirror of the backend's abandoned-
+session cleanup: if a session was reclaimed or expired, the agent quietly
+acquires a fresh one rather than failing, so monitoring survives transient
+server-side changes.
+\end{explain}
+
+% =====================================================================
+\section*{Summary}
+\addcontentsline{toc}{section}{Summary}
+
+The backend and the desktop agent share a single architectural blueprint
+expressed in two languages. Typed contracts --- \texttt{Result} and explicit
+errors on the server, \texttt{Protocol} ports on the client --- keep every
+layer replaceable and independently testable, while the domain in both systems
+stays free of framework and transport concerns. The two also cooperate
+defensively: the server reclaims abandoned sessions and the agent self-heals
+when its session expires, so monitoring is robust to crashes and lost
+connectivity. The next chapter describes the machine-learning service that
+turns the six keystroke features defined here into a stress prediction.
+
+\end{document}
