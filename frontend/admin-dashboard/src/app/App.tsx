@@ -17,6 +17,7 @@ const prefersDark = () => window.matchMedia("(prefers-color-scheme: dark)").matc
 import { DashboardView } from "./components/DashboardView";
 import { AlertsView } from "./components/AlertsView";
 import { UsersView } from "./components/UsersView";
+import { RequestsView } from "./components/RequestsView";
 import { DevicesView } from "./components/DevicesView";
 import { SettingsView } from "./components/SettingsView";
 
@@ -147,6 +148,7 @@ export default function App() {
       case "Dashboard":   return <DashboardView onNavigateAlerts={() => navigate("AlertsPage")} />;
       case "AlertsPage":  return <AlertsView />;
       case "Users":       return <UsersView showToast={showToast} />;
+      case "Requests":    return <RequestsView showToast={showToast} />;
       case "Devices":     return <DevicesView showToast={showToast} />;
       case "Settings":    return <SettingsView showToast={showToast} adminUser={adminUser} onUpdateAdmin={handleUpdateAdmin} preferences={prefs} onUpdatePreferences={updatePreferences} company={company} onCompanyChange={setCompany} />;
       default:            return <DashboardView onNavigateAlerts={() => navigate("AlertsPage")} />;

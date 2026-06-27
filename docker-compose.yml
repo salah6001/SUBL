@@ -96,6 +96,22 @@ services:
       - web-api
       - chatbot
 
+  # ── Landing page (TanStack Start marketing site, SSR via Node) ─────────────
+  frontend-landing:
+    image: subl-frontend-landing
+    container_name: frontend-landing
+    build:
+      context: ./frontend/landing-page
+      dockerfile: Dockerfile
+      args:
+        - VITE_API_URL=http://localhost:5000
+        - VITE_USER_APP_URL=http://localhost:3002
+    ports:
+      - 3003:3003
+    restart: unless-stopped
+    depends_on:
+      - web-api
+
   # ── Desktop monitoring agent (captures keystroke dynamics) ─────────────────
   desktop-agent:
     image: subl-desktop-agent

@@ -36,6 +36,7 @@ Subl runs as a small set of cooperating services, all started by a single
 | **web-api**       | Core backend API (.NET) — auth, data, analytics, notifications    | http://localhost:5000 |
 | **frontend-user** | Employee dashboard (React)                                        | http://localhost:3002 |
 | **frontend-admin**| Administrator dashboard (React)                                   | http://localhost:3001 |
+| **frontend-landing**| Public marketing site + "request a workspace" form (TanStack)  | http://localhost:3003 |
 | **ml-service**    | Python service that turns keystroke timing into a stress score    | http://localhost:8000 |
 | **chatbot**       | Wellbeing assistant the employee can chat with                    | http://localhost:5005 |
 | **desktop-agent** | Background agent that measures keystroke *timing* (never content) | — |
@@ -120,10 +121,19 @@ docker compose ps
 
 Open these in your browser:
 
+- **Landing page** → http://localhost:3003  (public marketing site; "Request Workspace" form onboards a new admin)
 - **Employee dashboard** → http://localhost:3002
 - **Administrator dashboard** → http://localhost:3001
 - **Email inbox (dev)** → http://localhost:8025  (any email the app "sends" appears here)
 - **Application logs (dev)** → http://localhost:8081
+
+> **Onboarding a new admin:** a visitor submits the **Request Workspace** form on the
+> landing page (company, name, work email — no password). An existing admin reviews it
+> under **Requests** in the admin console and clicks **Approve**, which creates the admin
+> account, emails a temporary password (visible in Mailpit), and shows it once on screen.
+>
+> **Browser push notifications:** see [docs/BROWSER_PUSH_NOTIFICATIONS.md](docs/BROWSER_PUSH_NOTIFICATIONS.md)
+> for how an employee turns on desktop push alerts.
 
 ## Sample logins
 

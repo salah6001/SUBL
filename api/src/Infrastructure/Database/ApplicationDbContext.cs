@@ -12,6 +12,7 @@ using Domain.StressDetection;
 using Domain.Subscriptions;
 using Domain.Surveys;
 using Domain.Users;
+using Domain.WorkspaceRequests;
 using Infrastructure.DomainEvents;
 using Microsoft.EntityFrameworkCore;
 using SharedKernel;
@@ -82,6 +83,9 @@ public sealed class ApplicationDbContext(
 
     // Alerts
     public DbSet<StressAlert> StressAlerts { get; set; }
+
+    // Workspace requests (new-admin onboarding from the landing page)
+    public DbSet<WorkspaceRequest> WorkspaceRequests { get; set; }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {

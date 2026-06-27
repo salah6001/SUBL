@@ -42,8 +42,23 @@ import {
   CircleCheck,
 } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
+import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+
+// Where the public marketing site points people. Configurable at build time so
+// the same image works locally and in production.
+const USER_APP_URL =
+  (import.meta.env.VITE_USER_APP_URL as string | undefined) ?? "http://localhost:3002";
+const API_URL =
+  ((import.meta.env.VITE_API_URL as string | undefined) ?? "http://localhost:5000").replace(/\/$/, "");
+
+/** Friendly toast for buttons that don't have a destination yet. */
+function comingSoon(label: string) {
+  toast("Coming soon", {
+    description: `${label} isn't available yet — we're working on it!`,
+  });
+}
 
 const FAQ_ITEMS = [
   {
@@ -123,7 +138,6 @@ export const Route = createFileRoute("/")({
   }),
 });
 
-const DASHBOARD_URL = "https://project--dc1575ca-e4a2-4764-9950-f12e2b4c4649.lovable.app/";
 
 const fadeUp = {
   initial: { opacity: 0, y: 28 },
@@ -297,14 +311,24 @@ function Navbar() {
             </a>
           ))}
         </nav>
-        <MagneticWrap strength={0.35}>
-          <div className="relative">
-            <span className="absolute inset-0 -z-10 animate-pulse rounded-md bg-blue-500/50 blur-lg" />
-            <Button asChild className="bg-blue-600 text-white shadow-md shadow-blue-600/30 transition-all hover:scale-[1.04] hover:bg-blue-700 hover:shadow-xl hover:shadow-blue-600/40">
-              <a href={DASHBOARD_URL} target="_blank" rel="noopener noreferrer">Request Demo</a>
-            </Button>
-          </div>
-        </MagneticWrap>
+        <div className="flex items-center gap-4">
+          <a
+            href={USER_APP_URL}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="hidden text-sm font-medium text-slate-600 transition-colors hover:text-slate-900 sm:inline"
+          >
+            Sign in
+          </a>
+          <MagneticWrap strength={0.35}>
+            <div className="relative">
+              <span className="absolute inset-0 -z-10 animate-pulse rounded-md bg-blue-500/50 blur-lg" />
+              <Button asChild className="bg-blue-600 text-white shadow-md shadow-blue-600/30 transition-all hover:scale-[1.04] hover:bg-blue-700 hover:shadow-xl hover:shadow-blue-600/40">
+                <a href="#request">Request Workspace</a>
+              </Button>
+            </div>
+          </MagneticWrap>
+        </div>
       </div>
     </header>
   );
@@ -378,7 +402,7 @@ function Hero() {
               size="lg"
               className="h-12 bg-blue-600 px-7 text-base text-white shadow-lg shadow-blue-600/30 transition-all hover:scale-[1.04] hover:bg-blue-700 hover:shadow-2xl hover:shadow-blue-600/50"
             >
-              <a href={DASHBOARD_URL} target="_blank" rel="noopener noreferrer">
+              <a href={USER_APP_URL} target="_blank" rel="noopener noreferrer">
                 Try for Free
                 <ArrowRight className="ml-1 h-4 w-4" />
               </a>
@@ -389,7 +413,7 @@ function Hero() {
               variant="outline"
               className="h-12 border-slate-300 bg-white px-7 text-base text-slate-900 transition-all hover:scale-[1.04] hover:border-blue-400 hover:bg-slate-50"
             >
-              <a href={DASHBOARD_URL} target="_blank" rel="noopener noreferrer">
+              <a href="#how-it-works">
                 See How It Works
               </a>
             </Button>
@@ -1386,11 +1410,53 @@ function FAQ() {
   );
 }
 
-/* ---------------------------- FINAL CTA ---------------------------- */
+/* ---------------------------- FINAL CTA — workspace request ---------------------------- */
 function FinalCTA() {
+  const [company, setCompany] = useState("");
+  const [name, setName] = useState("");
   const [email, setEmail] = useState("");
+  const [message, setMessage] = useState("");
+  const [submitting, setSubmitting] = useState(false);
+  const [submitted, setSubmitted] = useState(false);
+
+  async function handleSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    if (submitting) return;
+    setSubmitting(true);
+    try {
+      const res = await fetch(`${API_URL}/workspace-requests`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          companyName: company,
+          contactName: name,
+          email,
+          message: message || null,
+        }),
+      });
+      if (!res.ok) throw new Error(`Request failed (${res.status})`);
+      setSubmitted(true);
+      toast.success("Request received", {
+        description: "We'll review it and email you once your workspace is ready.",
+      });
+      setCompany("");
+      setName("");
+      setEmail("");
+      setMessage("");
+    } catch {
+      toast.error("Couldn't send your request", {
+        description: "Please try again, or email hello@subl.app.",
+      });
+    } finally {
+      setSubmitting(false);
+    }
+  }
+
   return (
-    <section className="relative overflow-hidden bg-gradient-to-br from-blue-700 via-blue-800 to-blue-950 py-32 text-white">
+    <section
+      id="request"
+      className="relative overflow-hidden bg-gradient-to-br from-blue-700 via-blue-800 to-blue-950 py-32 text-white"
+    >
       <motion.div
         animate={{
           backgroundPosition: ["0% 0%", "100% 100%", "0% 0%"],
@@ -1403,41 +1469,83 @@ function FinalCTA() {
         }}
         className="pointer-events-none absolute inset-0"
       />
-      <div className="relative mx-auto max-w-3xl px-6 text-center">
+      <div className="relative mx-auto max-w-2xl px-6 text-center">
         <motion.h2
           {...fadeUp}
           className="text-4xl font-bold leading-tight tracking-tight sm:text-5xl lg:text-6xl"
         >
-          Join the future of workplace health.
+          Request your workspace.
         </motion.h2>
         <motion.p {...fadeUp} className="mt-6 text-lg text-blue-100">
-          Get early access to Subl and build a stress-free workplace, today.
+          Tell us about your team and we'll set up a Subl workspace. Once approved,
+          your admin receives sign-in details by email.
         </motion.p>
-        <motion.form
-          {...fadeUp}
-          onSubmit={(e) => e.preventDefault()}
-          className="mx-auto mt-10 flex max-w-lg flex-col gap-3 sm:flex-row"
-        >
-          <Input
-            type="email"
-            required
-            aria-label="Work email address"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            placeholder="you@company.com"
-            className="h-12 flex-1 border-white/20 bg-white/10 text-white placeholder:text-blue-200 focus-visible:ring-white/40"
-          />
-          <Button
-            type="submit"
-            size="lg"
-            className="h-12 bg-white px-6 text-blue-700 shadow-xl transition-all hover:scale-[1.04] hover:bg-blue-50"
+
+        {submitted ? (
+          <motion.div
+            {...fadeUp}
+            className="mx-auto mt-10 flex max-w-lg flex-col items-center gap-3 rounded-2xl border border-white/20 bg-white/10 p-8"
           >
-            Get Early Access
-            <ChevronRight className="ml-1 h-4 w-4" />
-          </Button>
-        </motion.form>
+            <CheckCircle2 className="h-10 w-10 text-green-300" />
+            <p className="text-lg font-semibold">Thanks — your request is in!</p>
+            <p className="text-sm text-blue-100">
+              We'll review it shortly and email you when your workspace is ready.
+            </p>
+          </motion.div>
+        ) : (
+          <motion.form
+            {...fadeUp}
+            onSubmit={handleSubmit}
+            className="mx-auto mt-10 flex max-w-lg flex-col gap-3 text-left"
+          >
+            <div className="flex flex-col gap-3 sm:flex-row">
+              <Input
+                required
+                aria-label="Company name"
+                value={company}
+                onChange={(e) => setCompany(e.target.value)}
+                placeholder="Company name"
+                className="h-12 flex-1 border-white/20 bg-white/10 text-white placeholder:text-blue-200 focus-visible:ring-white/40"
+              />
+              <Input
+                required
+                aria-label="Your name"
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                placeholder="Your name"
+                className="h-12 flex-1 border-white/20 bg-white/10 text-white placeholder:text-blue-200 focus-visible:ring-white/40"
+              />
+            </div>
+            <Input
+              type="email"
+              required
+              aria-label="Work email address"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              placeholder="you@company.com"
+              className="h-12 border-white/20 bg-white/10 text-white placeholder:text-blue-200 focus-visible:ring-white/40"
+            />
+            <textarea
+              aria-label="Anything we should know? (optional)"
+              value={message}
+              onChange={(e) => setMessage(e.target.value)}
+              placeholder="Anything we should know? (optional)"
+              rows={3}
+              className="rounded-md border border-white/20 bg-white/10 px-3 py-2 text-sm text-white placeholder:text-blue-200 focus:outline-none focus:ring-2 focus:ring-white/40"
+            />
+            <Button
+              type="submit"
+              size="lg"
+              disabled={submitting}
+              className="h-12 bg-white px-6 text-blue-700 shadow-xl transition-all hover:scale-[1.02] hover:bg-blue-50 disabled:opacity-60"
+            >
+              {submitting ? "Sending…" : "Request Workspace"}
+              <ChevronRight className="ml-1 h-4 w-4" />
+            </Button>
+          </motion.form>
+        )}
         <p className="mt-5 text-xs text-blue-200">
-          No credit card required • Setup in under 5 minutes
+          No password needed here • We email setup details after approval
         </p>
       </div>
     </section>
@@ -1472,13 +1580,41 @@ function Footer() {
             <div key={c.h}>
               <p className="text-sm font-semibold text-slate-950">{c.h}</p>
               <ul className="mt-4 space-y-3">
-                {c.links.map((l) => (
-                  <li key={l}>
-                    <a href="#" className="text-sm text-slate-600 hover:text-slate-900">
-                      {l}
-                    </a>
-                  </li>
-                ))}
+                {c.links.map((l) => {
+                  // Anchors that exist on the page link directly; the rest show
+                  // a friendly "coming soon" toast instead of a dead "#" link.
+                  const anchor =
+                    l === "Features" ? "#features" : l === "Technology" ? "#technology" : null;
+                  if (anchor) {
+                    return (
+                      <li key={l}>
+                        <a href={anchor} className="text-sm text-slate-600 hover:text-slate-900">
+                          {l}
+                        </a>
+                      </li>
+                    );
+                  }
+                  if (l === "Contact") {
+                    return (
+                      <li key={l}>
+                        <a href="mailto:hello@subl.app" className="text-sm text-slate-600 hover:text-slate-900">
+                          {l}
+                        </a>
+                      </li>
+                    );
+                  }
+                  return (
+                    <li key={l}>
+                      <button
+                        type="button"
+                        onClick={() => comingSoon(l)}
+                        className="text-sm text-slate-600 hover:text-slate-900"
+                      >
+                        {l}
+                      </button>
+                    </li>
+                  );
+                })}
               </ul>
             </div>
           ))}
@@ -1486,9 +1622,9 @@ function Footer() {
         <div className="mt-12 flex flex-col items-center justify-between gap-4 border-t border-slate-200 pt-8 sm:flex-row">
           <p className="text-xs text-slate-500">© 2026 Subl. All rights reserved.</p>
           <div className="flex items-center gap-4 text-slate-400">
-            <a href="#" aria-label="Subl on Twitter" className="hover:text-slate-700"><Twitter className="h-4 w-4" /></a>
-            <a href="#" aria-label="Subl on LinkedIn" className="hover:text-slate-700"><Linkedin className="h-4 w-4" /></a>
-            <a href="#" aria-label="Subl on GitHub" className="hover:text-slate-700"><Github className="h-4 w-4" /></a>
+            <button type="button" onClick={() => comingSoon("Twitter")} aria-label="Subl on Twitter" className="hover:text-slate-700"><Twitter className="h-4 w-4" /></button>
+            <button type="button" onClick={() => comingSoon("LinkedIn")} aria-label="Subl on LinkedIn" className="hover:text-slate-700"><Linkedin className="h-4 w-4" /></button>
+            <button type="button" onClick={() => comingSoon("GitHub")} aria-label="Subl on GitHub" className="hover:text-slate-700"><Github className="h-4 w-4" /></button>
             <a href="mailto:hello@subl.app" aria-label="Email Subl" className="hover:text-slate-700"><Mail className="h-4 w-4" /></a>
           </div>
         </div>

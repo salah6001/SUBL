@@ -11,6 +11,7 @@ using Domain.StressDetection;
 using Domain.Subscriptions;
 using Domain.Surveys;
 using Domain.Users;
+using Domain.WorkspaceRequests;
 using Microsoft.EntityFrameworkCore;
 
 namespace Application.Abstractions.Data;
@@ -76,6 +77,9 @@ public interface IApplicationDbContext
 
     // Alerts
     DbSet<StressAlert> StressAlerts { get; }
+
+    // Workspace requests (new-admin onboarding from the landing page)
+    DbSet<WorkspaceRequest> WorkspaceRequests { get; }
 
     Task<int> SaveChangesAsync(CancellationToken cancellationToken = default);
 }

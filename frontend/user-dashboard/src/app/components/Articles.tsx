@@ -72,9 +72,18 @@ export function Articles() {
           {t("articles.back")}
         </button>
 
-        {/* Hero banner — clean gradient, no stock photography */}
+        {/* Hero banner — topic photo with a gradient fallback */}
         <div className="relative w-full h-36 rounded-2xl overflow-hidden mb-5 bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center">
-          <BookOpen className="w-10 h-10 text-white/70" />
+          {selected.image ? (
+            <img
+              src={selected.image}
+              alt=""
+              className="absolute inset-0 w-full h-full object-cover"
+              onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = "none"; }}
+            />
+          ) : (
+            <BookOpen className="w-10 h-10 text-white/70" />
+          )}
           <span
             className={`absolute top-3 left-3 px-2.5 py-1 rounded-full text-[11px] ${categoryColors[selected.category] ?? "bg-slate-100 text-slate-700"} backdrop-blur-sm`}
           >
@@ -193,9 +202,18 @@ export function Articles() {
               onClick={() => openArticle(article)}
               className="group bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 overflow-hidden hover:shadow-md hover:border-slate-300 dark:hover:border-slate-700 transition-all duration-200 text-left flex flex-col"
             >
-              {/* Header banner — clean gradient, no stock photography */}
+              {/* Header banner — topic photo with a gradient fallback */}
               <div className="relative h-28 overflow-hidden bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center">
-                <BookOpen className="w-8 h-8 text-white/70" />
+                {article.image ? (
+                  <img
+                    src={article.image}
+                    alt=""
+                    className="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                    onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = "none"; }}
+                  />
+                ) : (
+                  <BookOpen className="w-8 h-8 text-white/70" />
+                )}
                 <span
                   className={`absolute top-3 left-3 px-2 py-0.5 rounded-full text-[10px] backdrop-blur-sm ${
                     categoryColors[article.category] ?? "bg-white/80 text-slate-700"

@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import {
   LayoutDashboard, Users,
-  Monitor, Settings, X, ChevronRight, AlertTriangle,
+  Monitor, Settings, X, ChevronRight, AlertTriangle, Inbox,
 } from "lucide-react";
 import { SublLogo } from "./auth/SublLogo";
 import { fetchAlerts } from "../lib/admin/alertsApi";
@@ -10,7 +10,7 @@ import { useI18n } from "../lib/i18n";
 
 export type AppRoute =
   | "Dashboard" | "AlertsPage" | "Users"
-  | "Devices" | "Settings";
+  | "Requests" | "Devices" | "Settings";
 
 interface NavGroup {
   labelKey: string;
@@ -29,6 +29,7 @@ const NAV_GROUPS: NavGroup[] = [
     labelKey: "group.management",
     items: [
       { route: "Users", icon: <Users size={17} />, labelKey: "nav.users" },
+      { route: "Requests", icon: <Inbox size={17} />, labelKey: "nav.requests", superAdminOnly: true },
     ],
   },
   {

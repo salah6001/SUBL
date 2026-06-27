@@ -19,4 +19,5 @@ public static class Tags
     public const string DeviceSettings = "Device Settings";
     public const string Surveys = "Surveys";
     public const string Chat = "Chat";
+    public const string WorkspaceRequests = "Workspace Requests";
 }
