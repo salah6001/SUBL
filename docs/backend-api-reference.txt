@@ -1,0 +1,245 @@
+=======================================================================
+  Subl - Back-end API Reference
+=======================================================================
+
+REST/JSON API exposed by the .NET 10 Web.Api project. Every row is one
+endpoint: HTTP METHOD, ROUTE, and what it does.
+
+Conventions
+  - Routes are relative to the API host root.
+  - {id:guid} etc. are route parameters.
+  - Auth column:
+        (auth)  = requires a valid JWT (default for almost everything)
+        (admin) = requires super-admin / elevated permission
+        (public)= no authentication required
+  - The contract is also published as OpenAPI and browsable via Scalar.
+
+Endpoint count: ~140, grouped by feature area below.
+
+
+-----------------------------------------------------------------------
+AUTHENTICATION & USERS                                         (Users)
+-----------------------------------------------------------------------
+POST   users/register                       Register a new user          (public)
+POST   users/login                          Log in, issue JWT + session  (public)
+POST   users/login-2fa                      Complete login with 2FA code (public)
+POST   users/refresh                        Refresh access token         (public)
+POST   users/logout                         Log out / revoke session     (auth)
+POST   users/forgot-password                Request a password reset     (public)
+POST   users/reset-password                 Reset password using token   (public)
+POST   users/change-password                Change current user's password (auth)
+POST   users/confirm-email                  Confirm e-mail address       (public)
+POST   users/resend-confirmation            Resend e-mail confirmation   (auth)
+POST   users/enable-2fa                      Enable two-factor auth       (auth)
+POST   users/verify-2fa                      Verify 2FA setup             (auth)
+POST   users/disable-2fa                     Disable two-factor auth      (auth)
+
+GET    users/me                             Get current user             (auth)
+PUT    users/me                             Update current user          (auth)
+GET    users/me/profile                     Get current user's profile   (auth)
+PUT    users/me/profile                     Update current user's profile(auth)
+GET    users/me/preferences                 Get UI preferences (theme/lang/tz) (auth)
+PUT    users/me/preferences                 Update UI preferences        (auth)
+GET    users/me/sessions                    List current user's sessions (auth)
+DELETE users/me/data                        Erase all of my monitoring data (auth)
+
+GET    users                                Paginated list of users      (admin)
+GET    users/{userId:guid}                  Get a user by id             (admin)
+PUT    users/{userId:guid}                  Update a user                (admin)
+DELETE users/{userId:guid}                  Delete a user                (admin)
+POST   users/{userId:guid}/activate         Activate a user              (admin)
+POST   users/{userId:guid}/deactivate       Deactivate a user            (admin)
+POST   users/{userId:guid}/suspend          Suspend a user               (admin)
+GET    users/{userId:guid}/profile          Get a user's profile         (admin)
+PUT    users/{userId:guid}/profile          Update a user's profile      (admin)
+GET    users/{userId:guid}/roles            Get a user's roles           (admin)
+POST   users/{userId:guid}/roles            Assign a role to a user      (admin)
+DELETE users/{userId:guid}/roles/{roleId:guid}  Remove a role from a user(admin)
+GET    users/{userId:guid}/sessions         List a user's sessions       (admin)
+DELETE users/{userId:guid}/sessions         Revoke all of a user's sessions (admin)
+DELETE users/{userId:guid}/sessions/{sessionId:guid}  Revoke one session (admin)
+
+
+-----------------------------------------------------------------------
+ROLES & PERMISSIONS                                  (Roles, Permissions)
+-----------------------------------------------------------------------
+GET    permissions                          List all permissions         (admin)
+GET    roles                                Paginated list of roles      (admin)
+POST   roles                                Create a role                (admin)
+GET    roles/{roleId:guid}                  Get a role by id             (admin)
+PUT    roles/{roleId:guid}                  Update a role                (admin)
+DELETE roles/{roleId:guid}                  Delete a role                (admin)
+POST   roles/{roleId:guid}/activate         Activate a role              (admin)
+POST   roles/{roleId:guid}/deactivate       Deactivate a role            (admin)
+GET    roles/{roleId:guid}/permissions      Get a role's permissions     (admin)
+PUT    roles/{roleId:guid}/permissions      Update a role's permissions  (admin)
+
+
+-----------------------------------------------------------------------
+ACCOUNTS & CONTACTS                                         (Accounts)
+-----------------------------------------------------------------------
+GET    accounts                             Paginated list of accounts   (admin)
+POST   accounts                             Create an account            (admin)
+GET    accounts/{accountId:guid}            Get an account by id         (admin)
+PUT    accounts/{accountId:guid}            Update an account            (admin)
+DELETE accounts/{accountId:guid}            Delete an account            (admin)
+POST   accounts/{accountId:guid}/activate   Activate an account          (admin)
+POST   accounts/{accountId:guid}/deactivate Deactivate an account        (admin)
+GET    accounts/{accountId:guid}/contacts   List account contacts        (admin)
+POST   accounts/{accountId:guid}/contacts   Add a contact to an account  (admin)
+PUT    accounts/{accountId:guid}/contacts/{contactId:guid}   Update a contact (admin)
+DELETE accounts/{accountId:guid}/contacts/{contactId:guid}   Remove a contact (admin)
+PUT    accounts/{accountId:guid}/contacts/{contactId:guid}/permissions  Update contact permissions (admin)
+GET    accounts/{accountId:guid}/invitations         List pending invitations (admin)
+POST   accounts/{accountId:guid}/invitations         Invite a contact by e-mail (admin)
+POST   accounts/{accountId:guid}/invitations/{invitationId:guid}/resend  Resend invitation (admin)
+DELETE accounts/{accountId:guid}/invitations/{invitationId:guid}         Cancel invitation (admin)
+POST   invitations/{invitationId:guid}/accept        Accept a contact invitation (auth)
+
+
+-----------------------------------------------------------------------
+DESKTOP-AGENT DEVICES                                       (Devices)
+-----------------------------------------------------------------------
+POST   devices                              Register/re-register an agent device (auth)
+GET    devices                              List my registered devices   (auth)
+POST   devices/{deviceId:guid}/ping         Heartbeat: refresh last-seen (auth)
+DELETE devices/{deviceId:guid}              Revoke a device              (auth)
+GET    devices/claimable                    List devices I can claim     (auth)
+POST   devices/{deviceId:guid}/claim        Claim a device for my dashboard (auth)
+POST   devices/auto-claim                   Auto-claim freshest online device (auth)
+
+
+-----------------------------------------------------------------------
+STRESS MONITORING - SESSIONS                          (StressSessions)
+-----------------------------------------------------------------------
+POST   stress-sessions/start                Start a monitoring session   (auth)
+GET    stress-sessions/active               Get my active session, if any(auth)
+GET    stress-sessions                      My session history (paginated)(auth)
+GET    stress-sessions/{sessionId:guid}     Get a session + its readings  (auth)
+GET    stress-sessions/{sessionId:guid}/metrics  Aggregated metrics + level distribution (auth)
+POST   stress-sessions/{sessionId:guid}/pause    Pause a running session  (auth)
+POST   stress-sessions/{sessionId:guid}/resume   Resume a paused session  (auth)
+POST   stress-sessions/{sessionId:guid}/end      End a session            (auth)
+POST   stress-sessions/{sessionId:guid}/metrics  Submit a batch of 6 keyboard features; runs the ML model, stores a reading (auth)
+
+
+-----------------------------------------------------------------------
+STRESS MONITORING - READINGS & ANALYTICS                     (Stress)
+-----------------------------------------------------------------------
+GET    stress/current                       My most recent stress reading(auth)
+GET    stress/readings                      My paginated stress readings (auth)
+GET    stress/summary                       Aggregated KPIs for a date range (auth)
+GET    stress/trends                        Time-bucketed trends (Min/Hour/Day/Week) (auth)
+GET    stress/distribution                  Distribution across stress levels (auth)
+GET    stress/departments                   Stress aggregated per department (admin)
+       (stress live stream)                 Server-sent stream of live readings (auth)
+
+
+-----------------------------------------------------------------------
+EMOTION & CHAT                                       (Emotion, Chat)
+-----------------------------------------------------------------------
+POST   emotion/analyze                      Analyse emotion from free text (desktop agent) (auth)
+POST   ai/chat                              Send a message to the SublAI assistant (auth)
+
+
+-----------------------------------------------------------------------
+WEBHOOKS                                                    (Webhooks)
+-----------------------------------------------------------------------
+POST   webhooks/stress-sessions/{sessionId:guid}/metrics  Signed webhook metrics from the desktop agent (signature)
+
+
+-----------------------------------------------------------------------
+SURVEYS (stress self-assessment)                            (Surveys)
+-----------------------------------------------------------------------
+GET    survey/questions                     Get active assessment questions (auth)
+POST   survey/responses                     Submit assessment, get computed score (auth)
+GET    survey/responses                     My past survey results        (auth)
+
+
+-----------------------------------------------------------------------
+HABITS (well-being tracking)                                 (Habits)
+-----------------------------------------------------------------------
+GET    habits                               List my habits + streaks + today (auth)
+POST   habits                               Create a habit                (auth)
+PUT    habits/{habitId:guid}                Update a habit                (auth)
+DELETE habits/{habitId:guid}                Delete a habit                (auth)
+POST   habits/{habitId:guid}/toggle         Toggle today's completion     (auth)
+
+
+-----------------------------------------------------------------------
+ARTICLES (well-being content)                              (Articles)
+-----------------------------------------------------------------------
+GET    articles                             Paginated articles (published unless admin) (auth)
+GET    articles/{id:guid}                   Get one article (full content)(auth)
+POST   articles                             Create an article             (admin)
+PUT    articles/{id:guid}                   Update an article             (admin)
+DELETE articles/{id:guid}                   Delete an article             (admin)
+
+
+-----------------------------------------------------------------------
+NOTIFICATIONS                                         (Notifications)
+-----------------------------------------------------------------------
+GET    notifications                        Paginated notifications       (auth)
+GET    notifications/{id:guid}              Get one notification          (auth)
+GET    notifications/unread-count           Unread count                  (auth)
+GET    notifications/archived               Archived notifications        (auth)
+GET    notifications/types                  All notification types        (auth)
+GET    notifications/preferences            My notification preferences   (auth)
+PUT    notifications/preferences            Update my preferences         (auth)
+PUT    notifications/types/{typeId:guid}/settings   Update per-type settings (auth)
+POST   notifications/{id:guid}/read         Mark one as read              (auth)
+POST   notifications/{id:guid}/unread       Mark one as unread            (auth)
+POST   notifications/read-all               Mark all as read              (auth)
+POST   notifications/{id:guid}/resolve      Mark as acted upon            (auth)
+DELETE notifications/{id:guid}              Dismiss a notification        (auth)
+POST   notifications/archive-all            Archive all                   (auth)
+GET    notifications/vapid-public-key       VAPID public key for Web Push (auth)
+GET    notifications/push-tokens            List my push tokens           (auth)
+POST   notifications/push-tokens            Register a push token         (auth)
+DELETE notifications/push-tokens/{id:guid}  Delete a push token           (auth)
+POST   api/notifications/test               Send a test notification to me(auth)
+
+
+-----------------------------------------------------------------------
+ADMIN (super-admin dashboard)                                 (Admin)
+-----------------------------------------------------------------------
+GET    admin/dashboard/summary              Dashboard KPI summary         (admin)
+GET    admin/kpis                           Org-wide wellbeing KPIs        (admin)
+GET    admin/activity-feed                  Recent audit log as activity feed (admin)
+GET    admin/users/{userId:guid}/stress-trends  Stress trends for a user  (admin)
+GET    admin/alerts                         List admin stress alerts      (admin)
+PUT    admin/alerts/{id:guid}/acknowledge   Acknowledge an alert          (admin)
+PUT    admin/alerts/{id:guid}/resolve       Resolve an alert              (admin)
+GET    admin/devices                        List all registered devices   (admin)
+POST   admin/devices/{deviceId:guid}/assign Assign/release which user a device feeds (admin)
+DELETE admin/devices/{deviceId:guid}        Delete a revoked device       (admin)
+GET    admin/company                        Get the organisation's company name (admin)
+
+
+-----------------------------------------------------------------------
+AUDIT LOGS                                                 (AuditLogs)
+-----------------------------------------------------------------------
+GET    audit-logs                           Paginated audit logs          (admin)
+GET    audit-logs/{auditLogId:guid}         Get an audit log by id        (admin)
+GET    audit-logs/my                        My audit logs                 (auth)
+GET    users/{userId:guid}/audit-logs       A user's audit logs           (admin)
+
+
+-----------------------------------------------------------------------
+WORKSPACE ONBOARDING                              (WorkspaceRequests)
+-----------------------------------------------------------------------
+POST   workspace-requests                   Public request to set up a workspace (public)
+GET    workspace-requests                   List workspace requests       (admin)
+POST   workspace-requests/{id:guid}/approve Approve - provisions an admin account (admin)
+POST   workspace-requests/{id:guid}/reject  Reject a workspace request    (admin)
+
+
+-----------------------------------------------------------------------
+RESPONSE MODEL (all endpoints)
+-----------------------------------------------------------------------
+Success:  HTTP 200/201 with a JSON body (or 204 No Content).
+Failure:  HTTP 4xx/5xx as RFC-7807 problem details, produced by mapping
+          the handler's Result.Failure(error) to the right status code.
+          Validation failures return 400 with the offending fields.
+Auth:     JWT bearer token in the Authorization header; refresh via
+          POST users/refresh.

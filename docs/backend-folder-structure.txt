@@ -1,0 +1,140 @@
+=======================================================================
+  Subl - Back-end Folder Structure
+=======================================================================
+
+The back-end lives under  api/  and is a single .NET solution split into
+five projects: four for the Clean Architecture layers plus a shared
+kernel. Tests live in api/tests.
+
+api/
+├─ Directory.Packages.props        Central NuGet version management
+├─ Directory.Build.props           Shared MSBuild settings (TargetFramework)
+├─ src/
+│   ├─ Domain/                     LAYER 1 - enterprise rules (no deps)
+│   ├─ Application/                LAYER 2 - use cases
+│   ├─ Infrastructure/             LAYER 4 - adapters / details
+│   ├─ Web.Api/                    LAYER 3 - HTTP presentation
+│   └─ SharedKernel/               cross-cutting primitives
+└─ tests/
+    ├─ ArchitectureTests/          enforce the dependency rule
+    └─ SignalRTestClient/          manual real-time integration client
+
+
+-----------------------------------------------------------------------
+src/SharedKernel/        (referenced by every layer)
+-----------------------------------------------------------------------
+  Result.cs, Error.cs, ErrorType.cs        explicit success/failure
+  ValidationError.cs, ValidationException.cs
+  Entity.cs                                 base entity (+ domain events)
+  IDomainEvent.cs, IDomainEventHandler.cs
+  IDateTimeProvider.cs
+  PagedQuery.cs, PagedResult.cs             pagination primitives
+
+
+-----------------------------------------------------------------------
+src/Domain/              (the centre - pure C#, no frameworks)
+-----------------------------------------------------------------------
+Organised by business area. Each area holds its entities, enums, domain
+errors, and domain events.
+
+  Users/            User, UserProfile, UserRole, UserSession, enums,
+                    + domain events (UserRegistered, PasswordChanged, ...)
+  Permissions/      Role, Permission, RolePermission, DataMaskingPolicy,
+                    SystemModule, PermissionAction
+  Accounts/         Account, AccountContact, AccountSettings, ContactPermissions
+  StressDetection/  Device, StressSession, StressReading, KeyboardMetrics,
+                    StressLevel, SessionStatus, + domain events
+  Alerts/           StressAlert (+ enums, errors)
+  Surveys/          SurveyQuestion, SurveyResponse, SurveyAnswer
+  Habits/           Habit, HabitCompletion, HabitCategory
+  Articles/         Article, ArticleCategory
+  Notifications/    Notification, NotificationType, NotificationDelivery,
+                    UserNotificationPreferences, UserPushToken, enums
+  Privacy/          UserPrivacySettings
+  DeviceSettings/   UserDeviceSettings, MonitoringInterval
+  Subscriptions/    Plan, Subscription, Invoice (+ enums)
+  WorkspaceRequests/WorkspaceRequest (+ status, errors)
+  AuditLogs/        AuditLog, AuditAction
+  Common/           Department (shared enum)
+
+  Convention per area:  <Entity>.cs, <Entity>Errors.cs,
+                        <Enum>.cs, <Event>DomainEvent.cs
+
+
+-----------------------------------------------------------------------
+src/Application/         (use cases - vertical slices)
+-----------------------------------------------------------------------
+  Abstractions/         the "ports" the use cases depend on:
+      Messaging/        ICommand, IQuery, ICommandHandler, IQueryHandler
+      Behaviors/        ValidationDecorator, LoggingDecorator
+      Data/             IApplicationDbContext, IUnitOfWork
+      Identity/         ICurrentUserService, token services
+      Email/  Notifications/  RealTime/  Repositories/
+      StressDetection/  Audit/
+  Common/               Filtering/, Sorting/  (shared query helpers)
+  Extensions/           DI registration helpers
+
+  Feature folders (one per business area). Each contains one folder per
+  use case, and each use case holds:
+      <Feature>Command.cs        (or <Feature>Query.cs)   - the request
+      <Feature>CommandHandler.cs                          - the logic
+      <Feature>CommandValidator.cs                        - the rules
+      Common/  - shared response DTOs for that feature
+
+  Areas: Users/, Accounts/, Admin/, Alerts/, Articles/, AuditLogs/,
+         DeviceSettings/, Habits/, Notifications/, Permissions/,
+         Privacy/, Roles/, StressDetection/, Surveys/, WorkspaceRequests/
+
+  Example slice:
+     Application/Surveys/SubmitSurveyResponse/
+        SubmitSurveyResponseCommand.cs
+        SubmitSurveyResponseCommandHandler.cs
+        SubmitSurveyResponseCommandValidator.cs
+
+
+-----------------------------------------------------------------------
+src/Infrastructure/      (adapters / details)
+-----------------------------------------------------------------------
+  Database/             ApplicationDbContext, Migrations/
+  Identity/             auth stores, Migrations/  (identity schema)
+  Authentication/       JWT issuing, token services
+  Authorization/        permission-based policies
+  Security/             hashing, data masking
+  <Area>/               one EF IEntityTypeConfiguration per table, e.g.
+      Users/UserConfiguration.cs, Accounts/AccountConfiguration.cs,
+      StressDetection/Configurations/StressSessionConfiguration.cs ...
+  StressDetection/      ML HTTP client, settings, repositories,
+      BackgroundServices/   AbandonedSessionCleanupService
+  Notifications/        Channels/ (email, web-push), RealTime/,
+      Repositories/, BackgroundServices/ (delivery workers)
+  Email/                MailKit sender
+  RealTime/             SignalR hubs
+  DomainEvents/         domain-event dispatcher
+  Audit/  Privacy/  Permissions/  Habits/  Articles/  Subscriptions/
+  Surveys/  DeviceSettings/  WorkspaceRequests/  Time/
+
+
+-----------------------------------------------------------------------
+src/Web.Api/             (HTTP presentation)
+-----------------------------------------------------------------------
+  Program.cs            host build-up, DI, middleware pipeline
+  Endpoints/
+      IEndpoint.cs      the interface every endpoint implements
+      Tags.cs           OpenAPI tag constants
+      <Area>/           one file per endpoint (route + mapping), grouped:
+          Users/, Accounts/, Admin/, Articles/, AuditLogs/, Chat/,
+          Devices/, Emotion/, Habits/, Notifications/, Permissions/,
+          Roles/, Stress/, StressSessions/, Surveys/, Webhooks/,
+          WorkspaceRequests/
+  Middleware/           exception handling, request context
+  Extensions/           endpoint discovery, Result -> IResult mapping
+  Infrastructure/       CustomResults (problem-details helpers)
+
+
+-----------------------------------------------------------------------
+tests/
+-----------------------------------------------------------------------
+  ArchitectureTests/    NetArchTest + xUnit: enforce layer dependencies
+      BaseTest.cs       references each layer's assembly
+      Layers/LayerTests.cs
+  SignalRTestClient/    console client to exercise the real-time hub

@@ -1,0 +1,152 @@
+=======================================================================
+  Subl - Backend Architecture
+=======================================================================
+
+OVERVIEW
+-----------------------------------------------------------------------
+The backend is a single .NET 10 Web API that exposes the whole platform
+(user dashboard, admin dashboard, landing page, and the desktop agent)
+over one HTTP surface. It is built on CLEAN ARCHITECTURE and organised
+internally as VERTICAL SLICES, with a thin Minimal-API presentation
+layer on top.
+
+The guiding rule is the DEPENDENCY RULE: source-code dependencies point
+only inward. Inner layers know nothing about outer layers; the domain at
+the centre depends on no framework at all.
+
+
+THE FOUR LAYERS
+-----------------------------------------------------------------------
+
+  +-------------------------------------------------------------+
+  |  Web.Api  (Presentation)                                    |
+  |  Minimal-API endpoints, middleware, auth, SignalR hubs,     |
+  |  OpenAPI. Translates HTTP <-> application commands/queries. |
+  |     |                                                       |
+  |     v  depends on                                           |
+  |  Application  (Use cases)                                   |
+  |  Commands, Queries, Handlers, Validators, abstractions      |
+  |  (ports). One folder per feature = one vertical slice.      |
+  |     |                                                       |
+  |     v  depends on                                           |
+  |  Domain  (Enterprise rules)  <--- the centre, no deps       |
+  |  Entities, value objects, enums, domain events, domain      |
+  |  errors. Pure C#, no EF / ASP.NET / external packages.      |
+  +-------------------------------------------------------------+
+        ^
+        |  implements the Application's interfaces
+  +-------------------------------------------------------------+
+  |  Infrastructure  (Adapters / details)                       |
+  |  EF Core + PostgreSQL, JWT auth, e-mail, web-push, the ML    |
+  |  HTTP client, real-time, background services. Plugged in at  |
+  |  the edge via dependency injection.                          |
+  +-------------------------------------------------------------+
+
+  SharedKernel  - cross-cutting primitives shared by all layers
+  (Result, Error, Entity base, IDomainEvent, PagedResult, ...).
+
+  Dependency direction:
+     Web.Api  ->  Application  ->  Domain
+     Infrastructure ->  Application (interfaces) + Domain
+  Domain depends on nothing. Application never references Infrastructure
+  or Web.Api. These rules are enforced by automated architecture tests
+  (see backend-testing.txt).
+
+
+1. DOMAIN LAYER
+-----------------------------------------------------------------------
+- Rich entities that protect their own invariants: state changes go
+  through methods (e.g. StressSession.MarkAsAbandoned()), not public
+  setters. Constructors are private; entities are created via factory
+  methods that return a Result.
+- Domain events (e.g. HighStressDetectedDomainEvent, UserRegistered-
+  DomainEvent) record "something important happened" without coupling
+  the entity to whoever reacts.
+- Domain errors (e.g. SurveyErrors, DeviceErrors) are predefined Error
+  values returned inside a Result - never thrown as exceptions.
+- Value objects / enums (StressLevel, SessionStatus, Department, ...).
+
+
+2. APPLICATION LAYER
+-----------------------------------------------------------------------
+- Organised as VERTICAL SLICES: each use case lives in its own folder
+  with up to three files:
+     <Feature>Command.cs / <Feature>Query.cs   (the request, a record)
+     <Feature>Handler.cs                        (the business logic)
+     <Feature>Validator.cs                      (FluentValidation rules)
+- A custom CQRS abstraction (ICommand / IQuery / ICommandHandler /
+  IQueryHandler) keeps the slice independent of any mediator library.
+- Cross-cutting concerns are added as DECORATORS around handlers:
+     ValidationDecorator - runs all validators before the handler.
+     LoggingDecorator    - structured request logging + failures.
+- "Ports" (interfaces) for everything the use case needs from the
+  outside world live in Application/Abstractions:
+     Data (IApplicationDbContext, IUnitOfWork), Identity, Email,
+     Notifications, RealTime, Repositories, StressDetection, Audit.
+  Infrastructure provides the implementations.
+
+
+3. INFRASTRUCTURE LAYER
+-----------------------------------------------------------------------
+- Persistence: EF Core 10 over PostgreSQL (Npgsql). One IEntity-
+  TypeConfiguration per table; two schemas - "public" (business data)
+  and "identity" (auth). Migrations are versioned in source.
+- Authentication / Authorization: JWT bearer tokens, refresh-token
+  sessions, permission-based authorization, optional 2FA, data-masking
+  policies for sensitive fields.
+- Integrations: an HTTP client to the Python ML service (stress
+  scoring) and to the chatbot; MailKit for e-mail (Mailpit in dev);
+  WebPush for browser push notifications.
+- Real-time: SignalR / server-sent events to stream live stress
+  readings and notifications to the dashboards.
+- Background services (IHostedService): e.g. AbandonedSessionCleanup-
+  Service reclaims sessions whose agent went silent; notification
+  delivery workers.
+- Domain-event dispatch: events raised by entities are published after
+  SaveChanges and handled by Application event handlers (e.g. raising a
+  StressAlert when high stress is detected).
+
+
+4. WEB.API LAYER (PRESENTATION)
+-----------------------------------------------------------------------
+- Minimal APIs. Every endpoint implements a small IEndpoint interface
+  and registers its own route; endpoints are auto-discovered and mapped
+  at startup, grouped by feature tag (Users, Stress, Devices, ...).
+- An endpoint is intentionally thin: it maps the HTTP request to a
+  command/query, calls the handler, and translates the returned Result
+  into an HTTP response (200/201 on success, RFC-7807 problem details on
+  failure) via a single Result -> IResult mapping.
+- Middleware: exception handling, request context / correlation id,
+  authentication, and authorization.
+- OpenAPI document exposed and browsed via Scalar.
+
+
+REQUEST LIFECYCLE (end to end)
+-----------------------------------------------------------------------
+  HTTP request
+     -> Middleware (auth, correlation id, exception handling)
+     -> Endpoint maps body/route to a Command or Query
+     -> ValidationDecorator runs validators        (fail -> Result.Failure)
+     -> LoggingDecorator                            (structured logs)
+     -> Handler executes business logic, talks to the domain and to
+        ports (DbContext, ML client, ...)
+     -> Domain entities enforce invariants and raise domain events
+     -> SaveChanges persists; domain events dispatched to handlers
+     -> Handler returns Result<T>
+     -> Endpoint maps Result -> HTTP 2xx or Problem(4xx/5xx)
+  HTTP response
+
+
+KEY DESIGN DECISIONS (and why)
+-----------------------------------------------------------------------
+- Result instead of exceptions for expected failures -> explicit,
+  testable error paths; HTTP concerns stay out of the domain.
+- Vertical slices -> each feature is read, tested, and changed in
+  isolation; low coupling between features.
+- Ports & adapters -> the database, ML service, e-mail, and push
+  providers are all replaceable behind interfaces; the core is testable
+  without them.
+- Framework-free domain -> business rules survive framework upgrades and
+  are unit-testable with no infrastructure.
+- Architecture enforced by tests -> the dependency rule cannot silently
+  rot as the codebase grows.

@@ -1,0 +1,138 @@
+=======================================================================
+  Subl - Back-end Testing: Methods & Targets
+=======================================================================
+
+The back-end is verified at several levels. The emphasis is on
+guaranteeing that the Clean Architecture rules hold and that the
+real-time pipeline works end to end, rather than chasing a coverage
+percentage. The methods actually used in the repository are described
+below, each with WHAT it tests (its target) and WHY.
+
+
+-----------------------------------------------------------------------
+1. ARCHITECTURE TESTS  (automated)
+-----------------------------------------------------------------------
+Project:  api/tests/ArchitectureTests
+Tools:    xUnit (test runner) + NetArchTest.Rules (assembly rule engine)
+          + Shouldly (assertions)
+
+What it targets:
+  The DEPENDENCY RULE of Clean Architecture - that no layer takes a
+  forbidden dependency on another. Each test loads a layer's compiled
+  assembly and asserts it has no reference to a layer it must not know.
+
+Cases enforced (api/tests/ArchitectureTests/Layers/LayerTests.cs):
+  - Domain must NOT depend on Application
+  - Domain must NOT depend on Infrastructure
+  - Domain must NOT depend on Presentation (Web.Api)
+  - Application must NOT depend on Infrastructure
+  - Application must NOT depend on Presentation (Web.Api)
+  - Infrastructure must NOT depend on Presentation (Web.Api)
+
+How it works:
+  BaseTest.cs pins one type per layer to get its assembly:
+     Domain         -> typeof(User).Assembly
+     Application    -> typeof(ICommand).Assembly
+     Infrastructure -> typeof(ApplicationDbContext).Assembly
+     Presentation   -> typeof(Program).Assembly
+  Each [Fact] then runs, e.g.:
+     Types.InAssembly(DomainAssembly)
+          .Should().NotHaveDependencyOn("Application")
+          .GetResult().IsSuccessful.ShouldBeTrue();
+
+Why it matters:
+  These tests are the executable guardrails of the whole architecture.
+  If a developer accidentally references EF Core from the Domain, or the
+  Application from Infrastructure the "wrong way", the build's test step
+  fails immediately - the design cannot silently rot as the code grows.
+
+
+-----------------------------------------------------------------------
+2. REAL-TIME INTEGRATION TEST CLIENT  (manual / harness)
+-----------------------------------------------------------------------
+Project:  api/tests/SignalRTestClient
+Tools:    Microsoft.AspNetCore.SignalR.Client (console program)
+
+What it targets:
+  The live stress/notification pipeline over SignalR - that the hub
+  accepts a connection, authenticates, and pushes messages to subscribed
+  clients as readings are produced.
+
+How it works:
+  A small console client connects to the running API's hub, subscribes,
+  and prints the messages it receives. It is run by hand against a live
+  instance to confirm the real-time path works end to end (server hub ->
+  transport -> client), which a unit test cannot observe.
+
+Why it matters:
+  Real-time delivery is a cross-process concern (hub + transport + auth +
+  client). This client exercises the integrated path that the dashboards
+  rely on for live stress updates.
+
+
+-----------------------------------------------------------------------
+3. END-TO-END SMOKE TEST  (browser automation)
+-----------------------------------------------------------------------
+Tooling:  Playwright (headless Chromium) driving the three front-ends
+          against the full docker-compose stack (API + DB + ML + apps).
+
+What it targets:
+  The whole system through the real HTTP API and database, including the
+  back-end's critical flows as a user/admin actually triggers them:
+  - registration / login / JWT issuance
+  - the public landing "Request Workspace" onboarding submission
+  - admin approval that provisions an admin account
+    (verified in the DB: workspace_requests.status = Approved,
+     created_user_id set, new user has the Administrator role)
+  - article listing, navigation, live data rendering
+
+How it works:
+  A scripted browser performs the real user journeys across the landing,
+  user, and admin apps; assertions check both the UI and the resulting
+  database state. Test data is cleaned up afterwards.
+
+Why it matters:
+  It proves the back-end's slices, persistence, auth, and provisioning
+  logic work together against a real PostgreSQL - the integration that
+  unit tests by design do not cover.
+
+
+-----------------------------------------------------------------------
+4. MANUAL / CONTRACT VERIFICATION  (OpenAPI + Scalar)
+-----------------------------------------------------------------------
+Tooling:  Microsoft.AspNetCore.OpenAPI document + Scalar UI.
+
+What it targets:
+  The HTTP CONTRACT of every endpoint - routes, request/response shapes,
+  status codes, and auth requirements.
+
+How it works:
+  The API publishes an OpenAPI document; Scalar renders it as an
+  interactive UI where each endpoint can be called and its responses
+  inspected during development. The desktop agent and front-ends are
+  validated against this same contract.
+
+Why it matters:
+  Keeps the agent <-> API <-> front-end contracts honest and gives a
+  fast, manual way to verify an endpoint's behaviour and error model.
+
+
+-----------------------------------------------------------------------
+SUMMARY: METHODS vs TARGETS
+-----------------------------------------------------------------------
+  Method                     Target (what it guarantees)
+  -------------------------  --------------------------------------------
+  Architecture tests         Clean-Architecture dependency rule between
+  (xUnit + NetArchTest)      Domain/Application/Infrastructure/Web.Api
+  SignalR test client        Live real-time hub + transport + client path
+  E2E smoke (Playwright)     Full request/persistence/auth/onboarding flow
+                             against the real DB and ML service
+  OpenAPI + Scalar           HTTP contract of every endpoint (shapes,
+                             status codes, auth)
+
+Design philosophy:
+  Because business rules live in a framework-free Domain and use cases in
+  thin handlers, the highest-value automated checks are (a) that the
+  architecture boundaries cannot be violated and (b) that the integrated
+  pipeline (HTTP -> DB -> ML -> real-time) actually works. Those two are
+  exactly what the test suite targets.

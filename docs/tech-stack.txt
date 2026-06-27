@@ -1,0 +1,114 @@
+=======================================================================
+  Subl - Technology Stack (Front-end & Back-end)
+=======================================================================
+
+The platform is a set of containerised services orchestrated by a single
+root docker-compose. Three separate front-ends, one back-end API, a
+desktop agent, two Python AI services, and supporting infrastructure.
+
+
+=======================================================================
+FRONT-END
+=======================================================================
+
+There are THREE independent front-end applications, all written in
+TypeScript with React + Tailwind CSS, built with Vite.
+
+1) Landing page  (marketing site, port 3003)
+   - React 19
+   - TanStack Start (SSR) + TanStack Router
+   - TanStack Query (server-state)
+   - Tailwind CSS 4
+   - Radix UI primitives
+   - Zod (validation), Motion (animation)
+   - Vite 7, deployed behind Cloudflare (vite plugin)
+
+2) User dashboard  (employee app, port 3002)
+   - React 18
+   - React Router 7
+   - Tailwind CSS 4
+   - Radix UI primitives + lucide-react icons
+   - Recharts (stress charts/visualisation)
+   - react-hook-form (forms), Motion (animation)
+   - react-dnd (drag & drop), embla / slick carousels
+   - Vite 6, TypeScript
+
+3) Admin dashboard  (super-admin app, port 3001)
+   - Same stack as the user dashboard:
+     React 18, React Router 7, Tailwind CSS 4, Radix UI,
+     Recharts, react-hook-form, Vite 6, TypeScript
+
+Shared front-end characteristics:
+   - Component layer built on Radix UI (accessible primitives) styled
+     with Tailwind.
+   - Talks to the back-end over REST (JSON); receives live stress and
+     notification updates over a real-time channel (SSE / SignalR) and
+     browser Web Push.
+   - Arabic + English internationalisation (RTL support).
+
+
+=======================================================================
+BACK-END
+=======================================================================
+
+Web API
+   - .NET 10 / C#  (ASP.NET Core Minimal APIs)
+   - Clean Architecture + vertical slices (see backend-architecture.txt)
+   - Custom CQRS abstraction (ICommand / IQuery + handlers + decorators)
+   - FluentValidation (request validation)
+   - Microsoft.AspNetCore.OpenAPI + Scalar (API documentation UI)
+
+Persistence
+   - PostgreSQL 17
+   - EF Core 10 (Npgsql provider)
+   - Code-first migrations; two schemas: public + identity
+
+Authentication & Security
+   - JWT bearer authentication (Microsoft.AspNetCore.Authentication.JwtBearer)
+   - ASP.NET Core Identity (EF Core stores) for credentials
+   - Refresh-token sessions, optional 2FA, permission-based authorization,
+     data-masking for sensitive fields
+
+Real-time & Notifications
+   - SignalR (live stress readings, in-app notifications)
+   - WebPush (browser push notifications, VAPID)
+   - MailKit (transactional e-mail; Mailpit as the dev SMTP catcher)
+
+Observability
+   - Serilog structured logging
+   - Seq (log server, dev) via Serilog.Sinks.Seq
+   - Health checks (AspNetCore.HealthChecks.NpgSql)
+
+
+=======================================================================
+AI / ML SERVICES  (supporting the back-end)
+=======================================================================
+
+ML service  (stress scoring)
+   - Python, scikit-learn / imbalanced-learn, pandas, numpy
+   - Receives the 6 keyboard features and returns a stress score+level
+   - Called by the back-end over HTTP
+
+Chatbot  (SublAI assistant)
+   - Python service (chat.py) exposed via the back-end's ai/chat endpoint
+
+
+=======================================================================
+DESKTOP AGENT
+=======================================================================
+   - Python 3, Clean Architecture (domain/application/infrastructure/
+     presentation)
+   - pynput (keystroke timing capture)
+   - PyQt (system-tray desktop UI)
+   - HTTP client to the back-end (login, sessions, metric submission)
+   (See documentation-chapter.txt for its internals.)
+
+
+=======================================================================
+INFRASTRUCTURE / DEV-OPS
+=======================================================================
+   - Docker + docker-compose (single root compose orchestrates all
+     services: web-api, ml-service, chatbot, the 3 front-ends,
+     desktop-agent, postgres, mailpit, seq)
+   - PostgreSQL 17, Mailpit (SMTP), Seq (logs) as containers
+   - Persistent named volumes for postgres-data and desktop-agent-data
