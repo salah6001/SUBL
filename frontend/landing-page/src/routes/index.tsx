@@ -45,6 +45,7 @@ import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { SublLogo } from "@/components/SublLogo";
 
 // Where the public marketing site points people. Configurable at build time so
 // the same image works locally and in production.
@@ -288,11 +289,11 @@ function Navbar() {
       <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-6">
         <a href="#" className="flex items-center gap-2.5">
           <motion.div
-            animate={{ rotate: [0, 6, -6, 0] }}
+            animate={{ scale: [1, 1.05, 1] }}
             transition={{ duration: 6, repeat: Infinity, ease: "easeInOut" }}
-            className="relative grid h-9 w-9 place-content-center rounded-xl bg-gradient-to-br from-blue-600 to-blue-800 shadow-lg shadow-blue-600/30"
+            className="relative grid h-9 w-9 place-content-center rounded-xl bg-white shadow-md ring-1 ring-blue-100"
           >
-            <Brain className="h-5 w-5 text-white" />
+            <SublLogo className="h-6 w-6" />
             <span className="absolute -right-0.5 -top-0.5 flex h-2.5 w-2.5">
               <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-green-400 opacity-75" />
               <span className="relative inline-flex h-2.5 w-2.5 rounded-full bg-green-500" />
@@ -1560,8 +1561,8 @@ function Footer() {
         <div className="grid gap-12 lg:grid-cols-4">
           <div className="lg:col-span-2">
             <div className="flex items-center gap-2.5">
-              <div className="grid h-9 w-9 place-content-center rounded-xl bg-gradient-to-br from-blue-600 to-blue-800">
-                <Brain className="h-5 w-5 text-white" />
+              <div className="grid h-9 w-9 place-content-center rounded-xl bg-white ring-1 ring-slate-200">
+                <SublLogo className="h-6 w-6" />
               </div>
               <span className="text-xl font-bold tracking-tight text-slate-950">Subl</span>
             </div>
