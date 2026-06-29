@@ -1,0 +1,84 @@
+digraph SublArchitecture {
+  graph [rankdir=TB, bgcolor="white", fontname="Helvetica", labelloc="t",
+         fontsize=24, nodesep=0.5, ranksep=0.9, compound=true,
+         label="Subl — System Architecture (container view)"];
+  node  [shape=box, style="rounded,filled", fontname="Helvetica", fontsize=12,
+         margin="0.18,0.12", penwidth=1.2];
+  edge  [fontname="Helvetica", fontsize=10, color="#475569", penwidth=1.1];
+
+  // ================= CLIENTS / ACTORS =================
+  subgraph cluster_clients {
+    label="Clients"; style="rounded,filled"; color="#CBD5E1"; fillcolor="#F1F5F9"; fontsize=15;
+    visitor   [label="Visitor\n(web browser)",  fillcolor="#FFFFFF", color="#64748B"];
+    employee  [label="Employee\n(web browser)", fillcolor="#FFFFFF", color="#64748B"];
+    admin     [label="Super Admin\n(web browser)", fillcolor="#FFFFFF", color="#64748B"];
+    typist    [label="Employee\n(typing on desktop)", shape=ellipse, fillcolor="#FFFFFF", color="#64748B"];
+  }
+
+  // ================= DESKTOP AGENT =================
+  agent [label="Desktop Agent\n(Python · pynput · PyQt)\ncaptures keystroke TIMING only,\naggregates 6 features / window",
+         fillcolor="#FEF3C7", color="#D97706"];
+
+  // ================= FRONT-END APPS =================
+  subgraph cluster_frontend {
+    label="Front-end (TypeScript · React · Tailwind · Vite)"; style="rounded,filled";
+    color="#93C5FD"; fillcolor="#EFF6FF"; fontsize=15;
+    landing [label="Landing Page\n:3003\nReact 19 · TanStack Start (SSR)", fillcolor="#DBEAFE", color="#2563EB"];
+    userapp [label="User Dashboard\n:3002\nReact 18 · React Router · Recharts", fillcolor="#DBEAFE", color="#2563EB"];
+    adminapp[label="Admin Dashboard\n:3001\nReact 18 · React Router · Recharts", fillcolor="#DBEAFE", color="#2563EB"];
+  }
+
+  // ================= BACK-END API =================
+  api [label="Web API  (.NET 10 · ASP.NET Core)\nClean Architecture + vertical slices\nJWT auth · CQRS handlers · SignalR hubs\nOpenAPI / Scalar",
+       shape=box3d, fillcolor="#E0E7FF", color="#4338CA", penwidth=1.6, fontsize=13];
+
+  // ================= AI / ML SERVICES =================
+  subgraph cluster_ai {
+    label="AI / ML services (Python)"; style="rounded,filled";
+    color="#86EFAC"; fillcolor="#F0FDF4"; fontsize=15;
+    ml   [label="ML Service\nscikit-learn\nfeatures -> stress score + level", fillcolor="#DCFCE7", color="#16A34A"];
+    bot  [label="Chatbot\nSublAI assistant", fillcolor="#DCFCE7", color="#16A34A"];
+  }
+
+  // ================= DATA & INFRA =================
+  subgraph cluster_data {
+    label="Data & Infrastructure"; style="rounded,filled";
+    color="#FCA5A5"; fillcolor="#FEF2F2"; fontsize=15;
+    pg     [label="PostgreSQL 17\nschemas: public + identity", shape=cylinder, fillcolor="#FEE2E2", color="#DC2626"];
+    mail   [label="Mailpit\n(dev SMTP)", fillcolor="#FEE2E2", color="#DC2626"];
+    seq    [label="Seq\n(structured logs)", fillcolor="#FEE2E2", color="#DC2626"];
+  }
+
+  // external browser push
+  push [label="Browser Web Push\n(VAPID)", shape=note, fillcolor="#F8FAFC", color="#64748B"];
+
+  // ---------------- edges: clients -> apps ----------------
+  visitor  -> landing  [label="HTTPS"];
+  employee -> userapp  [label="HTTPS"];
+  admin    -> adminapp [label="HTTPS"];
+  typist   -> agent    [label="keystrokes", style=dashed];
+
+  // ---------------- apps -> API (REST) --------------------
+  landing  -> api [label="REST: workspace request,\nlogin (public)"];
+  userapp  -> api [label="REST + JWT"];
+  adminapp -> api [label="REST + JWT (admin)"];
+  agent    -> api [label="REST: register/claim device,\nstart/end session,\nsubmit 6 features"];
+
+  // ---------------- API -> apps (realtime) ----------------
+  api -> userapp  [label="live stress + notifications\n(SSE / SignalR)", style=dashed, color="#7C3AED", constraint=false];
+  api -> adminapp [label="live alerts (SSE / SignalR)", style=dashed, color="#7C3AED", constraint=false];
+  api -> push     [label="push notifications", style=dashed, color="#7C3AED"];
+
+  // ---------------- API -> AI services --------------------
+  api -> ml  [label="HTTP: score keystroke features"];
+  api -> bot [label="HTTP: ai/chat"];
+
+  // ---------------- API -> data ---------------------------
+  api -> pg   [label="EF Core 10 (SQL)"];
+  api -> mail [label="SMTP (MailKit)"];
+  api -> seq  [label="logs (Serilog)"];
+
+  // keep clusters roughly ordered
+  { rank=same; landing; userapp; adminapp; }
+  { rank=same; ml; bot; }
+}
