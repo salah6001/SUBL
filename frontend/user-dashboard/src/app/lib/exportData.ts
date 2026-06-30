@@ -1,9 +1,10 @@
-import { stressApi } from "../api/stress";
+import { getText } from "../api/client";
 import { habitsApi } from "../api/habits";
 import { surveyApi } from "../api/survey";
 
-// Builds a single CSV from the user's real data (stress trends, habits and
-// assessment history) and triggers a download — no mock/placeholder content.
+// Builds a single CSV from the user's real data — the COMPLETE raw stress
+// reading history (server-side export), plus habits and assessment history.
+// No mock/placeholder content, no 30-day cap.
 
 function csvCell(value: unknown): string {
   const s = value == null ? "" : String(value);
@@ -18,21 +19,20 @@ function section(title: string, headers: string[], rows: unknown[][]): string {
 
 export async function exportMyDataCsv(): Promise<void> {
   const now = new Date();
-  const start = new Date(now.getFullYear(), now.getMonth() - 1, now.getDate());
 
-  const [trends, habits, surveys] = await Promise.all([
-    stressApi.getTrends(start.toISOString(), now.toISOString(), "Day").catch(() => []),
+  const [readingsCsv, habits, surveys] = await Promise.all([
+    // Complete, all-time raw stress readings, exported server-side.
+    getText("/users/me/data/export").catch(() => ""),
     habitsApi.list().catch(() => []),
     surveyApi.history().catch(() => []),
   ]);
 
   const parts: string[] = [];
 
-  parts.push(section(
-    "# Stress trends (last 30 days)",
-    ["bucketStart", "averageScore", "peakScore", "readings"],
-    trends.map(t => [t.bucketStart, Math.round(t.averageScore * 100), Math.round(t.peakScore * 100), t.readingsCount]),
-  ));
+  parts.push(
+    "# Stress readings (full history)\n" +
+    (readingsCsv.trim() || "Id,SessionId,Score,Level,Confidence,ModelVersion,CreatedAt"),
+  );
 
   parts.push(section(
     "# Habits",

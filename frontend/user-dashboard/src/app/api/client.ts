@@ -113,6 +113,18 @@ async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
   return res.json() as Promise<T>;
 }
 
+/** Fetch a non-JSON (e.g. CSV) response body as text, with auth. */
+export async function getText(path: string): Promise<string> {
+  const headers: Record<string, string> = {};
+  if (_token) headers["Authorization"] = `Bearer ${_token}`;
+  const res = await fetch(`${BASE_URL}${path}`, {
+    headers,
+    signal: AbortSignal.timeout(30_000),
+  });
+  if (!res.ok) throw new ApiError(res.status, await errorMessage(res));
+  return res.text();
+}
+
 export const api = {
   get:    <T>(path: string)                 => request<T>(path),
   post:   <T>(path: string, data?: unknown) => request<T>(path, { method: "POST",   body: JSON.stringify(data) }),

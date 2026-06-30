@@ -20,8 +20,8 @@ interface SettingsProps {
 }
 
 const LANGUAGES = [
-  { value: "en-US", label: "English (US)" },
-  { value: "ar",    label: "العربية" },
+  { value: "en-US", label: "English (US)", disabled: false },
+  { value: "ar",    label: "العربية", disabled: true },
 ];
 
 /** Highlights the settings section currently scrolled into view. */
@@ -513,10 +513,15 @@ export function Settings({ user, setUser, preferences, onUpdatePreferences }: Se
 
             <div className="flex items-center justify-between gap-4">
               <span className="text-sm text-slate-600 dark:text-slate-400">{tr("settings.language")}</span>
-              <select value={preferences.language} onChange={e => setPref("language", e.target.value)}
-                className="text-sm bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg px-3 py-1.5 text-slate-800 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-200 dark:focus:ring-blue-900">
-                {LANGUAGES.map(l => <option key={l.value} value={l.value}>{l.label}</option>)}
-              </select>
+              <div className="flex flex-col items-end gap-1.5">
+                <select value={preferences.language === "ar" ? "en-US" : preferences.language} onChange={e => setPref("language", e.target.value)}
+                  className="text-sm bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg px-3 py-1.5 text-slate-800 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-200 dark:focus:ring-blue-900">
+                  {LANGUAGES.map(l => <option key={l.value} value={l.value} disabled={l.disabled}>{l.label}</option>)}
+                </select>
+                <span className="inline-flex items-center rounded-full bg-amber-100 dark:bg-amber-900/40 text-amber-700 dark:text-amber-300 px-2 py-0.5 text-[10px] font-bold">
+                  العربية — قريبًا · Arabic coming soon
+                </span>
+              </div>
             </div>
 
             <div className="flex items-center justify-between gap-4">
@@ -539,7 +544,7 @@ export function Settings({ user, setUser, preferences, onUpdatePreferences }: Se
             <h3 className="text-sm text-slate-800 dark:text-slate-200 mb-3">{tr("settings.appInfo")}</h3>
             <div className="space-y-2">
               {[
-                { l: tr("settings.version"), v: "2.4.1" },
+                { l: tr("settings.version"), v: "1.0.0" },
               ].map(({ l, v }) => (
                 <div key={l} className="flex justify-between text-sm py-0.5">
                   <span className="text-slate-500 dark:text-slate-400">{l}</span>

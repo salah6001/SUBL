@@ -1,6 +1,7 @@
-import { Laptop, RefreshCw, ChevronDown, CheckCircle } from "lucide-react";
+import { Laptop, RefreshCw, ChevronDown, CheckCircle, Download } from "lucide-react";
 import type { ClaimableDevice } from "../api/devices";
 import { usePrefs } from "../lib/prefs";
+import { agentDownload } from "../lib/agentDownload";
 
 interface Props {
   devices: ClaimableDevice[];
@@ -18,6 +19,12 @@ export function DeviceClaimBar({ devices, loading, claiming, onClaim, onRefresh 
   const { t } = usePrefs();
   const feeding = devices.find(d => d.claimedByMe);
   const others = devices.filter(d => !d.claimedByMe);
+  const dl = agentDownload();
+  // An agent is "attached and working" when a device feeds this user AND is
+  // currently online. Only then do we hide the download button.
+  const hasWorkingAgent = !!feeding && feeding.isOnline;
+  // Emphasise the download when there are no devices at all.
+  const noDevices = !feeding && others.length === 0;
 
   return (
     <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 px-4 py-3 flex flex-wrap items-center gap-x-4 gap-y-2">
@@ -45,6 +52,24 @@ export function DeviceClaimBar({ devices, loading, claiming, onClaim, onRefresh 
       )}
 
       <div className="flex items-center gap-2 ml-auto">
+        {/* Download the desktop agent — only when no agent is attached & working */}
+        {!hasWorkingAgent && (
+          <a
+            href={dl.url}
+            target="_blank"
+            rel="noopener noreferrer"
+            title={t("claim.downloadHint")}
+            className={`inline-flex items-center gap-1.5 text-xs font-medium px-3 py-1.5 rounded-lg border transition-colors ${
+              noDevices
+                ? "border-blue-300 bg-blue-50 text-blue-700 hover:bg-blue-100 dark:border-blue-800 dark:bg-blue-950/40 dark:text-blue-300"
+                : "border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:text-blue-600 dark:hover:text-blue-400"
+            }`}
+          >
+            <Download className="w-3.5 h-3.5" />
+            {dl.os === "Other" ? t("claim.downloadAgent") : `${t("claim.downloadAgent")} · ${dl.os}`}
+          </a>
+        )}
+
         {/* Switch to another device */}
         {others.length > 0 && (
           <div className="relative">
@@ -72,6 +97,12 @@ export function DeviceClaimBar({ devices, loading, claiming, onClaim, onRefresh 
           <RefreshCw className={`w-3.5 h-3.5 ${loading ? "animate-spin" : ""}`} />
         </button>
       </div>
+
+      {noDevices && (
+        <p className="basis-full text-[11px] text-slate-400 dark:text-slate-500">
+          {t("claim.downloadHint")}
+        </p>
+      )}
     </div>
   );
 }

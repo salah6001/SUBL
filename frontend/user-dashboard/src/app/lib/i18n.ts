@@ -181,6 +181,8 @@ const STRINGS: Record<Lang, Record<string, string>> = {
     "claim.noLiveDevice": "No live device is feeding your dashboard.",
     "claim.switchDevice": "Switch device",
     "claim.refresh": "Refresh",
+    "claim.downloadAgent": "Download agent",
+    "claim.downloadHint": "No device yet? Download the Subl agent, run it, and sign in — it will appear here to claim.",
 
     // Live stream
     "live.heading": "Live Keystroke Stress",
@@ -399,6 +401,8 @@ const STRINGS: Record<Lang, Record<string, string>> = {
     "claim.noLiveDevice": "لا يوجد جهاز نشط يغذّي لوحة التحكم.",
     "claim.switchDevice": "تبديل الجهاز",
     "claim.refresh": "تحديث",
+    "claim.downloadAgent": "تنزيل الوكيل",
+    "claim.downloadHint": "لا يوجد جهاز بعد؟ نزّل وكيل Subl وشغّله وسجّل الدخول — وسيظهر هنا لتطالب به.",
 
     // Live stream
     "live.heading": "توتر ضغطات المفاتيح المباشر",
