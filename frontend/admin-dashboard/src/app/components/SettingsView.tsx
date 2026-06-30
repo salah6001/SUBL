@@ -8,6 +8,7 @@ import { useI18n } from "../lib/i18n";
 import { api, ApiError } from "../lib/apiClient";
 import { updateCompany } from "../lib/admin/companyApi";
 import { getNotificationPrefs, updateNotificationPrefs } from "../lib/notificationsApi";
+import { enablePush, disablePush, isPushSupported } from "../lib/push";
 
 function splitName(name: string): { firstName: string; lastName: string } {
   const parts = name.trim().split(/\s+/);
@@ -66,17 +67,29 @@ const INPUT_CLS = "w-full px-4 py-2.5 bg-slate-50 dark:bg-slate-800 border borde
 function useScrollSpy(ids: string[]) {
   const [active, setActive] = useState(ids[0]);
   useEffect(() => {
-    const observer = new IntersectionObserver(
-      (entries) => {
-        const visible = entries
-          .filter(e => e.isIntersecting)
-          .sort((a, b) => a.boundingClientRect.top - b.boundingClientRect.top);
-        if (visible[0]) setActive(visible[0].target.id);
-      },
-      { rootMargin: "-20% 0px -70% 0px", threshold: 0 },
-    );
-    ids.forEach(id => { const el = document.getElementById(id); if (el) observer.observe(el); });
-    return () => observer.disconnect();
+    function update() {
+      const probe = window.innerHeight * 0.28;
+      let current = ids[0];
+      for (const id of ids) {
+        const el = document.getElementById(id);
+        if (el && el.getBoundingClientRect().top <= probe) current = id;
+      }
+      // The last section often can't scroll high enough to cross the probe line
+      // (not enough content below it), so highlight it once it's fully in view.
+      const lastEl = document.getElementById(ids[ids.length - 1]);
+      if (lastEl && lastEl.getBoundingClientRect().bottom <= window.innerHeight + 2) {
+        current = ids[ids.length - 1];
+      }
+      setActive(current);
+    }
+    update();
+    // capture = true so scrolls inside an inner scroll container are caught too.
+    window.addEventListener("scroll", update, true);
+    window.addEventListener("resize", update);
+    return () => {
+      window.removeEventListener("scroll", update, true);
+      window.removeEventListener("resize", update);
+    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [ids.join(",")]);
   return active;
@@ -237,10 +250,15 @@ function GeneralSettings({ showToast, preferences, onUpdatePreferences }: Props)
           </select>
         </SettingRow>
         <SettingRow label={tr("settings.language")}>
-          <select className={inputCls} value={preferences.language} onChange={e => set({ language: e.target.value })} style={{ fontSize: "0.875rem", width: "220px", appearance: "none" }}>
-            <option value="en-US">English (US)</option>
-            <option value="ar">العربية</option>
-          </select>
+          <div className="flex flex-col items-end gap-1.5">
+            <select className={inputCls} value={preferences.language === "ar" ? "en-US" : preferences.language} onChange={e => set({ language: e.target.value })} style={{ fontSize: "0.875rem", width: "220px", appearance: "none" }}>
+              <option value="en-US">English (US)</option>
+              <option value="ar" disabled>العربية</option>
+            </select>
+            <span className="inline-flex items-center rounded-full bg-amber-100 dark:bg-amber-900/40 text-amber-700 dark:text-amber-300 px-2 py-0.5" style={{ fontSize: "0.65rem", fontWeight: 700 }}>
+              العربية — قريبًا · Arabic coming soon
+            </span>
+          </div>
         </SettingRow>
         <SettingRow label={tr("settings.dateFormat")}>
           <select className={inputCls} value={preferences.dateFormat} onChange={e => set({ dateFormat: e.target.value })} style={{ fontSize: "0.875rem", width: "220px", appearance: "none" }}>
@@ -292,15 +310,29 @@ function NotificationsSettings({ showToast }: Props) {
       .finally(() => setLoaded(true));
   }, []);
 
+  const pushSupported = isPushSupported();
+
   // Each toggle persists immediately (partial update) — no fake "Save" button.
   async function toggle(key: keyof typeof prefs, value: boolean) {
     const prev = prefs;
     setPrefs({ ...prefs, [key]: value });
     try {
+      // Push needs a real browser subscription before the preference is meaningful:
+      // request permission, subscribe via the PushManager and register the token.
+      if (key === "pushEnabled") {
+        if (value) await enablePush();
+        else await disablePush();
+      }
       await updateNotificationPrefs({ [key]: value });
+      if (key === "pushEnabled" && value) showToast("Browser push enabled", "success");
     } catch (err) {
       setPrefs(prev);
-      showToast(err instanceof ApiError ? err.displayMessage : "Couldn't save preference", "error");
+      showToast(
+        err instanceof ApiError ? err.displayMessage
+          : err instanceof Error ? err.message
+          : "Couldn't save preference",
+        "error",
+      );
     }
   }
 
@@ -313,8 +345,8 @@ function NotificationsSettings({ showToast }: Props) {
         <SettingRow label="Email Alerts" description="Send stress alerts and critical events to your email.">
           <Toggle value={prefs.emailEnabled} disabled={!loaded} onChange={v => toggle("emailEnabled", v)} />
         </SettingRow>
-        <SettingRow label="Push Notifications" description="Browser push notifications for real-time critical alerts.">
-          <Toggle value={prefs.pushEnabled} disabled={!loaded} onChange={v => toggle("pushEnabled", v)} />
+        <SettingRow label="Push Notifications" description={pushSupported ? "Browser push notifications for real-time critical alerts." : "This browser doesn't support push notifications."}>
+          <Toggle value={prefs.pushEnabled && pushSupported} disabled={!loaded || !pushSupported} onChange={v => toggle("pushEnabled", v)} />
         </SettingRow>
         <SettingRow label="Slack" description="Slack delivery is configured server-side (a team webhook). When set, stress &amp; session alerts post to your Slack channel automatically.">
           <span className="px-2.5 py-1 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400" style={{ fontSize: "0.72rem", fontWeight: 600 }}>Server-managed</span>

@@ -145,7 +145,7 @@ export const MOCK_USERS: User[] = [
     location: "San Francisco, CA",
     stressHistory: genStress(45, -10),
     devices: [
-      { id: "d-a1", name: "MacBook Pro 16", os: "macOS 15.1", version: "2.4.1", ip: "192.168.1.12", lastSeen: dt(0, 9, 10), status: "Active" },
+      { id: "d-a1", name: "MacBook Pro 16", os: "macOS 15.1", version: "1.0.0", ip: "192.168.1.12", lastSeen: dt(0, 9, 10), status: "Active" },
       { id: "d-a2", name: "iPhone 16 Pro", os: "iOS 18.4", version: "2.3.0", ip: "10.0.0.44", lastSeen: dt(1, 8, 0), status: "Active" },
     ],
     assignedRoles: [
@@ -160,7 +160,7 @@ export const MOCK_USERS: User[] = [
     location: "New York, NY",
     stressHistory: genStress(25, 5),
     devices: [
-      { id: "d-b1", name: "Dell XPS 15", os: "Windows 11", version: "2.4.1", ip: "192.168.2.30", lastSeen: dt(0, 8, 44), status: "Active" },
+      { id: "d-b1", name: "Dell XPS 15", os: "Windows 11", version: "1.0.0", ip: "192.168.2.30", lastSeen: dt(0, 8, 44), status: "Active" },
     ],
     assignedRoles: [{ id: "r4", name: "Manager", assignedAt: d(150) }],
   },
@@ -183,7 +183,7 @@ export const MOCK_USERS: User[] = [
     location: "Palo Alto, CA",
     stressHistory: genStress(20, 0),
     devices: [
-      { id: "d-d1", name: "MacBook Air M3", os: "macOS 15.1", version: "2.4.1", ip: "192.168.1.88", lastSeen: dt(1, 13, 55), status: "Active" },
+      { id: "d-d1", name: "MacBook Air M3", os: "macOS 15.1", version: "1.0.0", ip: "192.168.1.88", lastSeen: dt(1, 13, 55), status: "Active" },
     ],
     assignedRoles: [
       { id: "r4", name: "Manager", assignedAt: d(100) },
@@ -208,7 +208,7 @@ export const MOCK_USERS: User[] = [
     location: "San Francisco, CA",
     stressHistory: genStress(40, 15),
     devices: [
-      { id: "d-f1", name: "Surface Pro 9", os: "Windows 11", version: "2.4.1", ip: "192.168.1.55", lastSeen: dt(0, 10, 10), status: "Active" },
+      { id: "d-f1", name: "Surface Pro 9", os: "Windows 11", version: "1.0.0", ip: "192.168.1.55", lastSeen: dt(0, 10, 10), status: "Active" },
     ],
     assignedRoles: [{ id: "r3", name: "Analyst", assignedAt: d(200) }],
   },
@@ -219,7 +219,7 @@ export const MOCK_USERS: User[] = [
     location: "Portland, OR",
     stressHistory: genStress(18, 2),
     devices: [
-      { id: "d-g1", name: "MacBook Air M2", os: "macOS 15.1", version: "2.4.1", ip: "192.168.5.10", lastSeen: dt(0, 11, 28), status: "Active" },
+      { id: "d-g1", name: "MacBook Air M2", os: "macOS 15.1", version: "1.0.0", ip: "192.168.5.10", lastSeen: dt(0, 11, 28), status: "Active" },
     ],
     assignedRoles: [{ id: "r5", name: "Viewer", assignedAt: d(100) }],
   },
@@ -230,7 +230,7 @@ export const MOCK_USERS: User[] = [
     location: "Seattle, WA",
     stressHistory: genStress(68, 12),
     devices: [
-      { id: "d-h1", name: "Ubuntu Workstation", os: "Ubuntu 24.04", version: "2.4.1", ip: "192.168.1.20", lastSeen: dt(0, 7, 59), status: "Active" },
+      { id: "d-h1", name: "Ubuntu Workstation", os: "Ubuntu 24.04", version: "1.0.0", ip: "192.168.1.20", lastSeen: dt(0, 7, 59), status: "Active" },
       { id: "d-h2", name: "MacBook Pro 14", os: "macOS 15.1", version: "2.4.0", ip: "192.168.1.21", lastSeen: dt(3, 9, 0), status: "Active" },
     ],
     assignedRoles: [
@@ -256,7 +256,7 @@ export const MOCK_USERS: User[] = [
     location: "San Francisco, CA",
     stressHistory: genStress(42, -8),
     devices: [
-      { id: "d-j1", name: "MacBook Pro 16", os: "macOS 15.1", version: "2.4.1", ip: "192.168.1.90", lastSeen: dt(0, 9, 40), status: "Active" },
+      { id: "d-j1", name: "MacBook Pro 16", os: "macOS 15.1", version: "1.0.0", ip: "192.168.1.90", lastSeen: dt(0, 9, 40), status: "Active" },
     ],
     assignedRoles: [{ id: "r3", name: "Analyst", assignedAt: d(180) }],
   },
@@ -267,7 +267,7 @@ export const MOCK_USERS: User[] = [
     location: "New York, NY",
     stressHistory: genStress(48, 5),
     devices: [
-      { id: "d-k1", name: "Surface Laptop 5", os: "Windows 11", version: "2.4.1", ip: "192.168.2.45", lastSeen: dt(0, 7, 12), status: "Active" },
+      { id: "d-k1", name: "Surface Laptop 5", os: "Windows 11", version: "1.0.0", ip: "192.168.2.45", lastSeen: dt(0, 7, 12), status: "Active" },
     ],
     assignedRoles: [
       { id: "r4", name: "Manager", assignedAt: d(400) },
@@ -294,7 +294,7 @@ export const MOCK_USERS: User[] = [
     location: "Palo Alto, CA",
     stressHistory: genStress(22, 0),
     devices: [
-      { id: "d-m1", name: "MacBook Pro 14", os: "macOS 15.1", version: "2.4.1", ip: "192.168.1.35", lastSeen: dt(0, 9, 55), status: "Active" },
+      { id: "d-m1", name: "MacBook Pro 14", os: "macOS 15.1", version: "1.0.0", ip: "192.168.1.35", lastSeen: dt(0, 9, 55), status: "Active" },
     ],
     assignedRoles: [{ id: "r3", name: "Analyst", assignedAt: d(150) }],
   },
@@ -305,7 +305,7 @@ export const MOCK_USERS: User[] = [
     location: "Houston, TX",
     stressHistory: genStress(70, 5),
     devices: [
-      { id: "d-n1", name: "Dell Latitude 5440", os: "Windows 11", version: "2.4.1", ip: "192.168.3.60", lastSeen: dt(0, 8, 18), status: "Active" },
+      { id: "d-n1", name: "Dell Latitude 5440", os: "Windows 11", version: "1.0.0", ip: "192.168.3.60", lastSeen: dt(0, 8, 18), status: "Active" },
     ],
     assignedRoles: [{ id: "r5", name: "Viewer", assignedAt: d(250) }],
   },
@@ -316,7 +316,7 @@ export const MOCK_USERS: User[] = [
     location: "Portland, OR",
     stressHistory: genStress(30, -5),
     devices: [
-      { id: "d-o1", name: "MacBook Air M3", os: "macOS 15.1", version: "2.4.1", ip: "192.168.5.20", lastSeen: dt(0, 11, 58), status: "Active" },
+      { id: "d-o1", name: "MacBook Air M3", os: "macOS 15.1", version: "1.0.0", ip: "192.168.5.20", lastSeen: dt(0, 11, 58), status: "Active" },
     ],
     assignedRoles: [{ id: "r5", name: "Viewer", assignedAt: d(130) }],
   },
@@ -327,7 +327,7 @@ export const MOCK_USERS: User[] = [
     location: "Austin, TX",
     stressHistory: genStress(55, 10),
     devices: [
-      { id: "d-p1", name: "ThinkPad X1 Carbon", os: "Ubuntu 24.04", version: "2.4.1", ip: "192.168.1.77", lastSeen: dt(0, 9, 25), status: "Active" },
+      { id: "d-p1", name: "ThinkPad X1 Carbon", os: "Ubuntu 24.04", version: "1.0.0", ip: "192.168.1.77", lastSeen: dt(0, 9, 25), status: "Active" },
     ],
     assignedRoles: [{ id: "r1", name: "Admin", assignedAt: d(200) }],
   },
@@ -338,7 +338,7 @@ export const MOCK_USERS: User[] = [
     location: "Denver, CO",
     stressHistory: genStress(15, 3),
     devices: [
-      { id: "d-q1", name: "MacBook Air M2", os: "macOS 15.1", version: "2.4.1", ip: "192.168.4.30", lastSeen: dt(1, 15, 55), status: "Active" },
+      { id: "d-q1", name: "MacBook Air M2", os: "macOS 15.1", version: "1.0.0", ip: "192.168.4.30", lastSeen: dt(1, 15, 55), status: "Active" },
     ],
     assignedRoles: [{ id: "r6", name: "HR Manager", assignedAt: d(100) }],
   },
@@ -349,7 +349,7 @@ export const MOCK_USERS: User[] = [
     location: "Boston, MA",
     stressHistory: genStress(45, 0),
     devices: [
-      { id: "d-r1", name: "Surface Pro 10", os: "Windows 11", version: "2.4.1", ip: "192.168.2.15", lastSeen: dt(0, 10, 40), status: "Active" },
+      { id: "d-r1", name: "Surface Pro 10", os: "Windows 11", version: "1.0.0", ip: "192.168.2.15", lastSeen: dt(0, 10, 40), status: "Active" },
     ],
     assignedRoles: [{ id: "r4", name: "Manager", assignedAt: d(180) }],
   },
@@ -371,7 +371,7 @@ export const MOCK_USERS: User[] = [
     location: "San Francisco, CA",
     stressHistory: genStress(52, -15),
     devices: [
-      { id: "d-t1", name: "MacBook Pro 16", os: "macOS 15.1", version: "2.4.1", ip: "192.168.1.5", lastSeen: dt(0, 8, 28), status: "Active" },
+      { id: "d-t1", name: "MacBook Pro 16", os: "macOS 15.1", version: "1.0.0", ip: "192.168.1.5", lastSeen: dt(0, 8, 28), status: "Active" },
       { id: "d-t2", name: "iPad Pro 11", os: "iPadOS 18", version: "2.4.0", ip: "10.0.0.12", lastSeen: dt(2, 8, 0), status: "Active" },
     ],
     assignedRoles: [
@@ -482,21 +482,21 @@ export const MOCK_AUDIT_LOGS: AuditLog[] = [
 // ─── Devices ──────────────────────────────────────────────────────────────────
 
 export const MOCK_DEVICES: Device[] = [
-  { id: "dev1", hostname: "SUBL-ENG-MAC-01", userId: "u1", userName: "Alice Johnson", department: "Engineering", os: "macOS 15.1", agentVersion: "2.4.1", ip: "192.168.1.12", status: "Active", lastSeen: dt(0, 9, 10), enrolledAt: d(380), stressSignal: "moderate" },
-  { id: "dev2", hostname: "SUBL-SALES-WIN-01", userId: "u2", userName: "Brian Nguyen", department: "Sales", os: "Windows 11", agentVersion: "2.4.1", ip: "192.168.2.30", status: "Active", lastSeen: dt(0, 8, 44), enrolledAt: d(290), stressSignal: "low" },
+  { id: "dev1", hostname: "SUBL-ENG-MAC-01", userId: "u1", userName: "Alice Johnson", department: "Engineering", os: "macOS 15.1", agentVersion: "1.0.0", ip: "192.168.1.12", status: "Active", lastSeen: dt(0, 9, 10), enrolledAt: d(380), stressSignal: "moderate" },
+  { id: "dev2", hostname: "SUBL-SALES-WIN-01", userId: "u2", userName: "Brian Nguyen", department: "Sales", os: "Windows 11", agentVersion: "1.0.0", ip: "192.168.2.30", status: "Active", lastSeen: dt(0, 8, 44), enrolledAt: d(290), stressSignal: "low" },
   { id: "dev3", hostname: "SUBL-SUP-WIN-02", userId: "u3", userName: "Carmen Ruiz", department: "Customer Support", os: "Windows 11", agentVersion: "2.4.0", ip: "192.168.3.15", status: "Active", lastSeen: dt(0, 7, 28), enrolledAt: d(420), stressSignal: "high" },
-  { id: "dev4", hostname: "SUBL-PROD-MAC-01", userId: "u4", userName: "David Park", department: "Product", os: "macOS 15.1", agentVersion: "2.4.1", ip: "192.168.1.88", status: "Idle", lastSeen: dt(1, 14, 0), enrolledAt: d(180), stressSignal: "low" },
-  { id: "dev5", hostname: "SUBL-FIN-WIN-01", userId: "u6", userName: "Frank Liu", department: "Finance", os: "Windows 11", agentVersion: "2.4.1", ip: "192.168.1.55", status: "Active", lastSeen: dt(0, 10, 10), enrolledAt: d(260), stressSignal: "moderate" },
-  { id: "dev6", hostname: "SUBL-MKT-MAC-01", userId: "u7", userName: "Grace Kim", department: "Marketing", os: "macOS 15.1", agentVersion: "2.4.1", ip: "192.168.5.10", status: "Active", lastSeen: dt(0, 11, 28), enrolledAt: d(150), stressSignal: "low" },
-  { id: "dev7", hostname: "SUBL-ENG-LNX-01", userId: "u8", userName: "Hiro Tanaka", department: "Engineering", os: "Ubuntu 24.04", agentVersion: "2.4.1", ip: "192.168.1.20", status: "Active", lastSeen: dt(0, 7, 59), enrolledAt: d(340), stressSignal: "critical" },
-  { id: "dev8", hostname: "SUBL-PROD-MAC-02", userId: "u10", userName: "Jake Morrison", department: "Product", os: "macOS 15.1", agentVersion: "2.4.1", ip: "192.168.1.90", status: "Active", lastSeen: dt(0, 9, 40), enrolledAt: d(220), stressSignal: "moderate" },
-  { id: "dev9", hostname: "SUBL-SALES-WIN-02", userId: "u11", userName: "Karen Lee", department: "Sales", os: "Windows 11", agentVersion: "2.4.1", ip: "192.168.2.45", status: "Active", lastSeen: dt(0, 7, 12), enrolledAt: d(450), stressSignal: "moderate" },
+  { id: "dev4", hostname: "SUBL-PROD-MAC-01", userId: "u4", userName: "David Park", department: "Product", os: "macOS 15.1", agentVersion: "1.0.0", ip: "192.168.1.88", status: "Idle", lastSeen: dt(1, 14, 0), enrolledAt: d(180), stressSignal: "low" },
+  { id: "dev5", hostname: "SUBL-FIN-WIN-01", userId: "u6", userName: "Frank Liu", department: "Finance", os: "Windows 11", agentVersion: "1.0.0", ip: "192.168.1.55", status: "Active", lastSeen: dt(0, 10, 10), enrolledAt: d(260), stressSignal: "moderate" },
+  { id: "dev6", hostname: "SUBL-MKT-MAC-01", userId: "u7", userName: "Grace Kim", department: "Marketing", os: "macOS 15.1", agentVersion: "1.0.0", ip: "192.168.5.10", status: "Active", lastSeen: dt(0, 11, 28), enrolledAt: d(150), stressSignal: "low" },
+  { id: "dev7", hostname: "SUBL-ENG-LNX-01", userId: "u8", userName: "Hiro Tanaka", department: "Engineering", os: "Ubuntu 24.04", agentVersion: "1.0.0", ip: "192.168.1.20", status: "Active", lastSeen: dt(0, 7, 59), enrolledAt: d(340), stressSignal: "critical" },
+  { id: "dev8", hostname: "SUBL-PROD-MAC-02", userId: "u10", userName: "Jake Morrison", department: "Product", os: "macOS 15.1", agentVersion: "1.0.0", ip: "192.168.1.90", status: "Active", lastSeen: dt(0, 9, 40), enrolledAt: d(220), stressSignal: "moderate" },
+  { id: "dev9", hostname: "SUBL-SALES-WIN-02", userId: "u11", userName: "Karen Lee", department: "Sales", os: "Windows 11", agentVersion: "1.0.0", ip: "192.168.2.45", status: "Active", lastSeen: dt(0, 7, 12), enrolledAt: d(450), stressSignal: "moderate" },
   { id: "dev10", hostname: "SUBL-ENG-LNX-02", userId: "u12", userName: "Lucas Ferrari", department: "Engineering", os: "Debian 12", agentVersion: "2.3.5", ip: "10.0.0.5", status: "Revoked", lastSeen: dt(7, 18, 28), enrolledAt: d(390), stressSignal: "high" },
-  { id: "dev11", hostname: "SUBL-ENG-MAC-02", userId: "u13", userName: "Mia Chen", department: "Engineering", os: "macOS 15.1", agentVersion: "2.4.1", ip: "192.168.1.35", status: "Active", lastSeen: dt(0, 9, 55), enrolledAt: d(200), stressSignal: "low" },
-  { id: "dev12", hostname: "SUBL-SUP-WIN-03", userId: "u14", userName: "Nathan Brooks", department: "Customer Support", os: "Windows 11", agentVersion: "2.4.1", ip: "192.168.3.60", status: "Active", lastSeen: dt(0, 8, 18), enrolledAt: d(310), stressSignal: "high" },
-  { id: "dev13", hostname: "SUBL-MKT-MAC-02", userId: "u15", userName: "Olivia Turner", department: "Marketing", os: "macOS 15.1", agentVersion: "2.4.1", ip: "192.168.5.20", status: "Active", lastSeen: dt(0, 11, 58), enrolledAt: d(170), stressSignal: "low" },
-  { id: "dev14", hostname: "SUBL-ENG-WIN-01", userId: "u16", userName: "Paul Martinez", department: "Engineering", os: "Ubuntu 24.04", agentVersion: "2.4.1", ip: "192.168.1.77", status: "Active", lastSeen: dt(0, 9, 25), enrolledAt: d(280), stressSignal: "high" },
-  { id: "dev15", hostname: "SUBL-ENG-MAC-03", userId: "u20", userName: "Tanya Black", department: "Engineering", os: "macOS 15.1", agentVersion: "2.4.1", ip: "192.168.1.5", status: "Active", lastSeen: dt(0, 8, 28), enrolledAt: d(700), stressSignal: "moderate" },
+  { id: "dev11", hostname: "SUBL-ENG-MAC-02", userId: "u13", userName: "Mia Chen", department: "Engineering", os: "macOS 15.1", agentVersion: "1.0.0", ip: "192.168.1.35", status: "Active", lastSeen: dt(0, 9, 55), enrolledAt: d(200), stressSignal: "low" },
+  { id: "dev12", hostname: "SUBL-SUP-WIN-03", userId: "u14", userName: "Nathan Brooks", department: "Customer Support", os: "Windows 11", agentVersion: "1.0.0", ip: "192.168.3.60", status: "Active", lastSeen: dt(0, 8, 18), enrolledAt: d(310), stressSignal: "high" },
+  { id: "dev13", hostname: "SUBL-MKT-MAC-02", userId: "u15", userName: "Olivia Turner", department: "Marketing", os: "macOS 15.1", agentVersion: "1.0.0", ip: "192.168.5.20", status: "Active", lastSeen: dt(0, 11, 58), enrolledAt: d(170), stressSignal: "low" },
+  { id: "dev14", hostname: "SUBL-ENG-WIN-01", userId: "u16", userName: "Paul Martinez", department: "Engineering", os: "Ubuntu 24.04", agentVersion: "1.0.0", ip: "192.168.1.77", status: "Active", lastSeen: dt(0, 9, 25), enrolledAt: d(280), stressSignal: "high" },
+  { id: "dev15", hostname: "SUBL-ENG-MAC-03", userId: "u20", userName: "Tanya Black", department: "Engineering", os: "macOS 15.1", agentVersion: "1.0.0", ip: "192.168.1.5", status: "Active", lastSeen: dt(0, 8, 28), enrolledAt: d(700), stressSignal: "moderate" },
 ];
 
 // ─── Permission matrix ────────────────────────────────────────────────────────

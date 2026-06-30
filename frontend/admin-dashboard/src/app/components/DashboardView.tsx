@@ -20,7 +20,7 @@ export function DashboardView({ onNavigateAlerts }: DashboardViewProps) {
           </h2>
         </div>
         <p className="text-slate-500 dark:text-slate-400 ml-3.5" style={{ fontSize: "0.82rem" }}>
-          Real-time wellness intelligence — aggregated team data · Strict privacy compliance
+          Real-time wellness intelligence — aggregated team data · Privacy-first by design
         </p>
       </div>
 
@@ -62,10 +62,10 @@ export function DashboardView({ onNavigateAlerts }: DashboardViewProps) {
       {/* Footer */}
       <footer className="mt-4 mb-2 flex flex-col sm:flex-row items-center justify-between gap-2">
         <p className="text-slate-400 dark:text-slate-600" style={{ fontSize: "0.72rem" }}>
-          Subl AI Admin Console · v2.4.1 · All data is anonymized and aggregated at team level
+          Subl AI Admin Console · v1.0.0 · All data is anonymized and aggregated at team level
         </p>
         <p className="text-slate-400 dark:text-slate-600" style={{ fontSize: "0.72rem" }}>
-          © 2026 Subl Technologies · GDPR &amp; HIPAA Compliant
+          © 2026 Subl Technologies · Built on GDPR &amp; HIPAA principles
         </p>
       </footer>
     </div>

@@ -23,6 +23,9 @@ import {
   deactivateUser,
   splitName,
   DEPARTMENT_LABELS,
+  departmentToInt,
+  getUserProfile,
+  updateUserProfile,
   fetchActiveSessionCount,
   revokeAllSessions,
   fetchUserDevices,
@@ -304,7 +307,7 @@ interface UserDetailProps {
   user: User;
   allUsers: User[];
   onBack: () => void;
-  onUpdateUser: (u: User) => void;
+  onUpdateUser: (u: User) => void | Promise<void>;
   onDeleteUser: (id: string) => void;
   showToast: (msg: string, type?: ToastType) => void;
 }
@@ -567,7 +570,15 @@ function UserDetail({ user, allUsers, onBack, onUpdateUser, onDeleteUser, showTo
       </div>
 
       <EditUserModal user={user} isOpen={editOpen} onClose={() => setEditOpen(false)}
-        onSave={u => { onUpdateUser(u); setEditOpen(false); showToast(`${u.name}'s profile updated successfully`, "success"); }} />
+        onSave={async u => {
+          try {
+            await onUpdateUser(u);
+            setEditOpen(false);
+            showToast(`${u.name}'s profile updated successfully`, "success");
+          } catch (err) {
+            showToast(err instanceof ApiError ? err.displayMessage : "Couldn't update user", "error");
+          }
+        }} />
 
       <SuspendUserModal user={user} isOpen={suspendOpen} onClose={() => setSuspendOpen(false)}
         onConfirm={reason => {
@@ -639,11 +650,41 @@ export function UsersView({ showToast }: Props) {
     else await activateUser(id);
   }
 
-  // Edit: update name/email, plus status if it changed.
+  // Edit: update name/email, department/phone (profile), plus status if changed.
   async function updateUser(updated: User) {
     const original = users.find(u => u.id === updated.id);
     const { firstName, lastName } = splitName(updated.name);
     await updateUserApi(updated.id, { firstName, lastName, email: updated.email });
+
+    // Persist profile fields (department, job title, phone) — these were not
+    // saved before, so edits only showed in the UI and reverted on reload.
+    // NOTE: the form's "Job Role" maps to the profile's displayJobTitle. The
+    // backend PUT is a full replace, so fetch the existing profile and preserve
+    // the fields this form doesn't edit.
+    const profileChanged =
+      original && (
+        original.department !== updated.department ||
+        original.phone !== updated.phone ||
+        original.primaryRole !== updated.primaryRole
+      );
+    if (profileChanged) {
+      const deptInt = departmentToInt(updated.department);
+      const existing = await getUserProfile(updated.id).catch(() => null);
+      const jobTitle =
+        updated.primaryRole && updated.primaryRole !== "—" ? updated.primaryRole : null;
+      await updateUserProfile(updated.id, {
+        department: deptInt ?? (existing ? departmentToInt(existing.department) : null) ?? 1,
+        displayJobTitle: jobTitle,
+        internalJobTitle: existing?.internalJobTitle ?? null,
+        hourlyCost: existing?.hourlyCost ?? null,
+        phoneNumber: updated.phone ?? existing?.phoneNumber ?? null,
+        hireDate: existing?.hireDate ?? null,
+        avatarUrl: existing?.avatarUrl ?? null,
+        bio: existing?.bio ?? null,
+        skills: existing?.skills ?? null,
+      });
+    }
+
     if (original && original.status !== updated.status) {
       await applyStatus(updated.id, updated.status);
     }

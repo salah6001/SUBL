@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import {
   LayoutDashboard, Users,
-  Monitor, Settings, X, ChevronRight, AlertTriangle, Inbox,
+  Monitor, Settings, X, ChevronRight, AlertTriangle,
 } from "lucide-react";
 import { SublLogo } from "./auth/SublLogo";
 import { fetchAlerts } from "../lib/admin/alertsApi";
@@ -10,7 +10,7 @@ import { useI18n } from "../lib/i18n";
 
 export type AppRoute =
   | "Dashboard" | "AlertsPage" | "Users"
-  | "Requests" | "Devices" | "Settings";
+  | "Devices" | "Settings";
 
 interface NavGroup {
   labelKey: string;
@@ -29,7 +29,6 @@ const NAV_GROUPS: NavGroup[] = [
     labelKey: "group.management",
     items: [
       { route: "Users", icon: <Users size={17} />, labelKey: "nav.users" },
-      { route: "Requests", icon: <Inbox size={17} />, labelKey: "nav.requests", superAdminOnly: true },
     ],
   },
   {
@@ -156,7 +155,7 @@ export function Sidebar({ activeRoute, onNavigate, mobileOpen, onClose }: Sideba
           <div className="px-3 py-2">
             <div className="flex items-center gap-2 mb-1">
               <div className="w-2 h-2 rounded-full bg-green-400 animate-pulse" />
-              <span className="text-slate-500 dark:text-slate-400" style={{ fontSize: "0.7rem" }}>{t("sidebar.systemOnline")} · v2.4.1</span>
+              <span className="text-slate-500 dark:text-slate-400" style={{ fontSize: "0.7rem" }}>{t("sidebar.systemOnline")} · v1.0.0</span>
             </div>
             <div className="w-full bg-slate-100 dark:bg-slate-800 rounded-full h-1">
               <div className="bg-blue-500 h-1 rounded-full" style={{ width: "82%" }} />

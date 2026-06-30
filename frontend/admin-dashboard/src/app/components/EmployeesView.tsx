@@ -506,7 +506,7 @@ export function EmployeesView() {
           </p>
           <div className="flex items-center gap-1.5">
             <Shield size={11} className="text-blue-400" />
-            <p className="text-blue-500" style={{ fontSize: "0.68rem" }}>GDPR compliant · No individual wellness data stored</p>
+            <p className="text-blue-500" style={{ fontSize: "0.68rem" }}>Privacy-first · No individual wellness data stored</p>
           </div>
         </div>
       </div>

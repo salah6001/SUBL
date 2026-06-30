@@ -81,26 +81,34 @@ export function DepartmentBenchmarkChart() {
 
   return (
     <Shell>
-      <div className="space-y-3 pt-1">
+      <div className="space-y-4 pt-1">
         {data.map(d => {
           const color = getBarColor(d.stress);
           const isHovered = hovered === d.department;
           return (
             <div
               key={d.department}
-              className="flex items-center gap-3 group"
+              className="group"
               onMouseEnter={() => setHovered(d.department)}
               onMouseLeave={() => setHovered(null)}
             >
-              <span
-                className="flex-shrink-0 text-right text-slate-500 dark:text-slate-400"
-                style={{ fontSize: "0.75rem", width: "52px" }}
-              >
-                {d.department}
-              </span>
-              <div className="flex-1 relative h-8 bg-slate-100 dark:bg-slate-800 rounded-lg overflow-hidden">
+              <div className="flex items-center justify-between gap-3 mb-1.5">
+                <span
+                  className="truncate text-slate-600 dark:text-slate-300"
+                  style={{ fontSize: "0.8rem", fontWeight: 500 }}
+                >
+                  {d.department}
+                </span>
+                <span
+                  className="flex-shrink-0 tabular-nums"
+                  style={{ fontSize: "0.78rem", fontWeight: 700, color }}
+                >
+                  {d.stress}% · {getLevel(d.stress)}
+                </span>
+              </div>
+              <div className="relative h-2.5 bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden">
                 <div
-                  className="h-full rounded-lg transition-all duration-500 ease-out"
+                  className="h-full rounded-full transition-all duration-500 ease-out"
                   style={{
                     width: `${d.stress}%`,
                     background: color,
@@ -108,12 +116,6 @@ export function DepartmentBenchmarkChart() {
                   }}
                 />
               </div>
-              <span
-                className="flex-shrink-0 tabular-nums"
-                style={{ fontSize: "0.78rem", fontWeight: 700, color, width: "78px" }}
-              >
-                {d.stress}% · {getLevel(d.stress)}
-              </span>
             </div>
           );
         })}

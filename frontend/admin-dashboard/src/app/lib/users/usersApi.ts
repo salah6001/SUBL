@@ -134,21 +134,51 @@ export function createUser(req: {
   return api.post<string>("users/register", req);
 }
 
-/** Admin update of a user's profile (department, job title, phone, …). */
+/** A user's full profile (admin view) — used to preserve fields on edit. */
+export interface AdminUserProfile {
+  department: string;
+  displayJobTitle: string | null;
+  internalJobTitle: string | null;
+  hourlyCost: number | null;
+  phoneNumber: string | null;
+  hireDate: string | null;
+  avatarUrl: string | null;
+  bio: string | null;
+  skills: string[];
+}
+
+/** Fetch a user's full profile so an edit can preserve the fields it doesn't show. */
+export function getUserProfile(id: string): Promise<AdminUserProfile> {
+  return api.get<AdminUserProfile>(`users/${id}/profile`);
+}
+
+/** Admin update of a user's profile (department, job title, phone, …).
+ * The backend PUT is a full replace, so callers should pass through existing
+ * values for fields they aren't changing (see getUserProfile). */
 export function updateUserProfile(
   id: string,
-  req: { department: number; displayJobTitle?: string | null; phoneNumber?: string | null },
+  req: {
+    department: number;
+    displayJobTitle?: string | null;
+    internalJobTitle?: string | null;
+    hourlyCost?: number | null;
+    phoneNumber?: string | null;
+    hireDate?: string | null;
+    avatarUrl?: string | null;
+    bio?: string | null;
+    skills?: string[] | null;
+  },
 ): Promise<void> {
   return api.put<void>(`users/${id}/profile`, {
     department: req.department,
     displayJobTitle: req.displayJobTitle ?? null,
-    internalJobTitle: null,
-    hourlyCost: null,
+    internalJobTitle: req.internalJobTitle ?? null,
+    hourlyCost: req.hourlyCost ?? null,
     phoneNumber: req.phoneNumber ?? null,
-    hireDate: null,
-    avatarUrl: null,
-    bio: null,
-    skills: null,
+    hireDate: req.hireDate ?? null,
+    avatarUrl: req.avatarUrl ?? null,
+    bio: req.bio ?? null,
+    skills: req.skills ?? null,
   });
 }
 
