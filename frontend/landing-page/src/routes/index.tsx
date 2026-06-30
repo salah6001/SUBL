@@ -1,4 +1,4 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import {
   motion,
   AnimatePresence,
@@ -6,7 +6,6 @@ import {
   useTransform,
   useInView,
   useMotionValue,
-  useMotionValueEvent,
   animate,
   useSpring,
 } from "motion/react";
@@ -16,7 +15,8 @@ import {
   Activity,
   Users,
   Zap,
-  TrendingUp,
+  MonitorSmartphone,
+  MessageCircle,
   Sparkles,
   ArrowRight,
   CheckCircle2,
@@ -28,9 +28,6 @@ import {
   Bell,
   ChevronRight,
   Mail,
-  Twitter,
-  Linkedin,
-  Github,
   Plus,
   Minus,
   AlertTriangle,
@@ -51,36 +48,29 @@ import { SublLogo } from "@/components/SublLogo";
 // the same image works locally and in production.
 const USER_APP_URL =
   (import.meta.env.VITE_USER_APP_URL as string | undefined) ?? "http://localhost:3002";
+const ADMIN_APP_URL =
+  (import.meta.env.VITE_ADMIN_APP_URL as string | undefined) ?? "http://localhost:3001";
+/** Where the public "Request Workspace" form is delivered. */
+const CONTACT_EMAIL = "abdulrahman.wael@proton.me";
 const API_URL =
   ((import.meta.env.VITE_API_URL as string | undefined) ?? "http://localhost:5000").replace(/\/$/, "");
-
-/** Friendly toast for buttons that don't have a destination yet. */
-function comingSoon(label: string) {
-  toast("Coming soon", {
-    description: `${label} isn't available yet — we're working on it!`,
-  });
-}
 
 const FAQ_ITEMS = [
   {
     q: "Is my typing data secure?",
-    a: "Yes. Subl never captures the content of what you type — only timing patterns like cadence and pauses. Data is encrypted end-to-end and stored under your organization's tenant with strict access controls.",
+    a: "Yes. Subl never captures the content of what you type — only timing patterns like cadence and pauses. Data is anonymized and stored under your organization's tenant with strict access controls.",
   },
   {
     q: "How does the AI detect stress?",
-    a: "We use a multimodal model that correlates keystroke dynamics, mouse movement smoothness, and focus duration. Together, these behavioral signals reliably predict cognitive load and early burnout — no cameras, no microphones.",
+    a: "We use an ensemble model that utilizes keystroke dynamics. This signals cognitive load and early burnout — no cameras, no microphones.",
   },
   {
     q: "Does HR see my personal data?",
-    a: "Never. HR dashboards only show aggregated, anonymized team-level metrics. Individual scores stay private to the employee. We enforce a strict minimum group size before any analytics surface to leadership.",
+    a: "Never. HR dashboards only show aggregated, anonymized team-level metrics about stress levels. Individual scores of stress stay private to the employee along with habit tracking and chats with our AI assistant",
   },
   {
-    q: "How long until we see ROI?",
-    a: "Most teams report a measurable reduction in burnout-related absenteeism within 60 days and improved retention within two quarters. Our success team helps you benchmark from day one.",
-  },
-  {
-    q: "Can I uninstall the agent anytime?",
-    a: "Absolutely. The desktop agent is fully opt-in and removable with a single click. On removal, all local behavioral data is permanently deleted.",
+    q: "Can I uninstall the agent and delete my data anytime?",
+    a: "Absolutely. The desktop agent is fully opt-in and removable at any time. And you stay in control of your data: one click on \"Delete My Data\" in your dashboard permanently erases all of your monitoring data — sessions, keystroke metrics, stress readings, and habits.",
   },
 ];
 
@@ -312,14 +302,23 @@ function Navbar() {
             </a>
           ))}
         </nav>
-        <div className="flex items-center gap-4">
+        <div className="flex items-center gap-3">
           <a
             href={USER_APP_URL}
             target="_blank"
             rel="noopener noreferrer"
             className="hidden text-sm font-medium text-slate-600 transition-colors hover:text-slate-900 sm:inline"
           >
-            Sign in
+            Employee login
+          </a>
+          <a
+            href={ADMIN_APP_URL}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="hidden items-center gap-1.5 rounded-md border border-slate-300 px-3 py-1.5 text-sm font-medium text-slate-700 transition-colors hover:border-blue-400 hover:bg-slate-50 hover:text-slate-900 sm:inline-flex"
+          >
+            <Shield className="h-3.5 w-3.5 text-blue-600" />
+            Admin login
           </a>
           <MagneticWrap strength={0.35}>
             <div className="relative">
@@ -426,7 +425,7 @@ function Hero() {
             </div>
             <div className="flex items-center gap-2">
               <CheckCircle2 className="h-4 w-4 text-green-600" />
-              GDPR & HIPAA Ready
+              Privacy-first by design
             </div>
           </div>
         </motion.div>
@@ -584,21 +583,32 @@ function Marquee() {
 }
 
 /* ---------------------------- THE CRISIS ---------------------------- */
-function Counter({ to, suffix = "", prefix = "" }: { to: number; suffix?: string; prefix?: string }) {
+function Counter({
+  to,
+  suffix = "",
+  prefix = "",
+  decimals = 0,
+}: {
+  to: number;
+  suffix?: string;
+  prefix?: string;
+  decimals?: number;
+}) {
   const ref = useRef<HTMLSpanElement>(null);
   const inView = useInView(ref, { once: true, margin: "-100px" });
   const motionValue = useMotionValue(0);
-  const [display, setDisplay] = useState("0");
+  const [display, setDisplay] = useState(decimals > 0 ? (0).toFixed(decimals) : "0");
 
   useEffect(() => {
     if (!inView) return;
     const controls = animate(motionValue, to, {
       duration: 2,
       ease: [0.22, 1, 0.36, 1],
-      onUpdate: (v) => setDisplay(Math.round(v).toLocaleString()),
+      onUpdate: (v) =>
+        setDisplay(decimals > 0 ? v.toFixed(decimals) : Math.round(v).toLocaleString()),
     });
     return () => controls.stop();
-  }, [inView, to, motionValue]);
+  }, [inView, to, motionValue, decimals]);
 
   return (
     <span ref={ref}>
@@ -613,24 +623,28 @@ function CrisisSection() {
   const stats = [
     {
       icon: AlertTriangle,
-      value: 75,
+      value: 41,
       suffix: "%",
-      label: "of employees experience burnout",
+      label: "of employees feel a lot of stress at work every day",
+      source: "Gallup, State of the Global Workplace: 2024",
       color: "text-orange-300",
     },
     {
       icon: DollarSign,
-      value: 300,
+      value: 1,
       prefix: "$",
-      suffix: "B",
-      label: "lost annually to workplace stress",
+      suffix: "T",
+      label: "lost to depression & anxiety each year in the global economy",
+      source: "WHO & ILO, 2022",
       color: "text-rose-300",
     },
     {
       icon: LogOut,
-      value: 2,
-      suffix: "x",
-      label: "higher turnover in burned-out teams",
+      value: 2.6,
+      decimals: 1,
+      suffix: "×",
+      label: "more likely to be job-hunting when burned out",
+      source: "Gallup, Employee Burnout report",
       color: "text-amber-300",
     },
   ];
@@ -679,9 +693,10 @@ function CrisisSection() {
               <div className="absolute -right-6 -top-6 h-24 w-24 rounded-full bg-white/5 blur-2xl transition-all group-hover:bg-white/10" />
               <s.icon className={`h-7 w-7 ${s.color}`} />
               <p className="mt-6 text-5xl font-bold tracking-tight sm:text-6xl">
-                <Counter to={s.value} prefix={s.prefix} suffix={s.suffix} />
+                <Counter to={s.value} prefix={s.prefix} suffix={s.suffix} decimals={s.decimals} />
               </p>
               <p className="mt-3 text-base text-slate-300">{s.label}</p>
+              <p className="mt-2 text-xs text-slate-500">{s.source}</p>
             </motion.div>
           ))}
         </motion.div>
@@ -728,9 +743,10 @@ function DualValue() {
               </p>
               <ul className="mt-8 space-y-5">
                 {[
-                  { icon: Lock, title: "100% Private", desc: "We never track content. Only keystroke and mouse dynamics." },
-                  { icon: Sparkles, title: "Proactive Interventions", desc: "The Subl AI Assistant nudges you before stress accumulates." },
+                  { icon: Lock, title: "100% Private", desc: "We never track content. Only keystroke dynamics." },
+                  { icon: Sparkles, title: "Proactive Interventions", desc: "The dashboard nudges you before stress accumulates." },
                   { icon: CheckCircle2, title: "Daily Habit Tracking", desc: "Build sustainable routines with personalized micro-habits." },
+                  { icon: MessageCircle, title: "Subl AI Assistant", desc: "A private, always-on assistant for guidance and quick check-ins — your chats stay yours, never shared with HR." },
                 ].map((f) => (
                   <li key={f.title} className="flex gap-4">
                     <div className="grid h-9 w-9 shrink-0 place-content-center rounded-lg bg-green-50 text-green-600">
@@ -772,7 +788,7 @@ function DualValue() {
                 {[
                   { icon: Users, title: "Department Health", desc: "Compare wellness signals across teams — never individuals." },
                   { icon: Bell, title: "Real-time Burnout Alerts", desc: "Act before turnover happens with predictive flags." },
-                  { icon: TrendingUp, title: "ROI on Retention", desc: "Measure productivity gains and reduced attrition costs." },
+                  { icon: MonitorSmartphone, title: "Device & Account Control", desc: "Provision, claim, assign, or revoke employee devices and admin accounts in a few clicks." },
                 ].map((f) => (
                   <li key={f.title} className="flex gap-4">
                     <div className="grid h-9 w-9 shrink-0 place-content-center rounded-lg bg-blue-500/20 text-blue-300">
@@ -832,7 +848,7 @@ function BentoFeatures() {
                 Real-Time Dashboard
               </h3>
               <p className="mt-2 max-w-md text-slate-300">
-                Live wellness signals, focus heatmaps, and team trends — all in one calm,
+                Live wellness signals and team trends — all in one calm,
                 glanceable view.
               </p>
               <div className="mt-8 flex-1 rounded-2xl border border-white/10 bg-white/5 p-5 backdrop-blur-sm">
@@ -878,16 +894,13 @@ function BentoFeatures() {
                   Multimodal AI
                 </h3>
                 <p className="mt-2 max-w-md text-sm text-slate-600">
-                  Correlates keystrokes, mouse dynamics, and focus patterns to detect cognitive
+                  Correlates keystrokes and focus patterns to detect cognitive
                   load — without ever reading content.
                 </p>
               </div>
               <div className="mt-5 flex flex-wrap gap-2">
                 <div className="flex items-center gap-1.5 rounded-lg bg-slate-100 px-3 py-1.5 text-xs font-medium text-slate-700">
                   <Keyboard className="h-3.5 w-3.5" /> Typing rhythm
-                </div>
-                <div className="flex items-center gap-1.5 rounded-lg bg-slate-100 px-3 py-1.5 text-xs font-medium text-slate-700">
-                  <MousePointer2 className="h-3.5 w-3.5" /> Cursor flow
                 </div>
                 <div className="flex items-center gap-1.5 rounded-lg bg-slate-100 px-3 py-1.5 text-xs font-medium text-slate-700">
                   <Eye className="h-3.5 w-3.5" /> Focus depth
@@ -996,9 +1009,9 @@ function TechnologySection() {
           </p>
           <ul className="mt-8 space-y-4">
             {[
-              { icon: Lock, t: "End-to-end encryption at rest and in transit." },
+              { icon: Lock, t: "Private content hidden at rest and in transit." },
               { icon: Shield, t: "Aggregated, anonymized analytics for HR." },
-              { icon: CheckCircle2, t: "GDPR, HIPAA, and SOC 2 aligned by design." },
+              { icon: CheckCircle2, t: "Designed around GDPR & HIPAA privacy principles." },
               { icon: Eye, t: "Zero content capture. Patterns only — always." },
             ].map((i) => (
               <li key={i.t} className="flex items-start gap-3">
@@ -1081,17 +1094,45 @@ function HowItWorks() {
   ];
 
   const ref = useRef<HTMLDivElement>(null);
-  const { scrollYProgress } = useScroll({
-    target: ref,
-    offset: ["start start", "end end"],
-  });
-  const lineScale = useSpring(scrollYProgress, { stiffness: 60, damping: 20 });
-
+  const stepRefs = useRef<(HTMLDivElement | null)[]>([]);
+  // Drive the timeline fill and the active step from real element positions so
+  // the order can never invert (the previous scrollYProgress mapping did).
+  const lineProgress = useMotionValue(0);
+  const lineScale = useSpring(lineProgress, { stiffness: 60, damping: 20 });
   const [active, setActive] = useState(0);
-  useMotionValueEvent(scrollYProgress, "change", (v) => {
-    const idx = Math.min(steps.length - 1, Math.max(0, Math.floor(v * steps.length)));
-    setActive(idx);
-  });
+
+  useEffect(() => {
+    function update() {
+      const section = ref.current;
+      if (!section) return;
+      const vh = window.innerHeight || document.documentElement.clientHeight;
+      const r = section.getBoundingClientRect();
+      // Fill the line as the section travels past the viewport middle (top→bottom).
+      const p = (vh * 0.5 - r.top) / r.height;
+      lineProgress.set(Math.min(1, Math.max(0, p)));
+      // Active step = the one whose vertical center is nearest the viewport middle.
+      let best = 0;
+      let bestDist = Infinity;
+      stepRefs.current.forEach((el, i) => {
+        if (!el) return;
+        const rr = el.getBoundingClientRect();
+        const center = rr.top + rr.height / 2;
+        const dist = Math.abs(center - vh * 0.5);
+        if (dist < bestDist) {
+          bestDist = dist;
+          best = i;
+        }
+      });
+      setActive(best);
+    }
+    update();
+    window.addEventListener("scroll", update, { passive: true });
+    window.addEventListener("resize", update);
+    return () => {
+      window.removeEventListener("scroll", update);
+      window.removeEventListener("resize", update);
+    };
+  }, [lineProgress]);
 
   return (
     <section id="how-it-works" className="relative bg-slate-50 py-28">
@@ -1133,10 +1174,20 @@ function HowItWorks() {
                   }}
                 />
 
-                <AnimatePresence mode="wait">
-                  {active === 0 && <StepVisualInstall key="install" />}
-                  {active === 1 && <StepVisualBaseline key="baseline" />}
-                  {active === 2 && <StepVisualProtection key="protection" />}
+                {/*
+                  Single keyed child, default (sync) mode: the visual for the
+                  current step mounts immediately and the previous one fades out
+                  concurrently (both are absolute inset-0, so it cross-fades).
+                  mode="wait" queued exits and left the visual a step behind.
+                */}
+                <AnimatePresence initial={false}>
+                  {active === 0 ? (
+                    <StepVisualInstall key="install" />
+                  ) : active === 1 ? (
+                    <StepVisualBaseline key="baseline" />
+                  ) : (
+                    <StepVisualProtection key="protection" />
+                  )}
                 </AnimatePresence>
               </div>
             </div>
@@ -1157,6 +1208,9 @@ function HowItWorks() {
                 return (
                   <motion.div
                     key={s.title}
+                    ref={(el) => {
+                      stepRefs.current[i] = el;
+                    }}
                     animate={{
                       opacity: isActive ? 1 : 0.3,
                       x: isActive ? 0 : -4,
@@ -1446,7 +1500,7 @@ function FinalCTA() {
       setMessage("");
     } catch {
       toast.error("Couldn't send your request", {
-        description: "Please try again, or email hello@subl.app.",
+        description: `Please try again, or email ${CONTACT_EMAIL}.`,
       });
     } finally {
       setSubmitting(false);
@@ -1571,62 +1625,37 @@ function Footer() {
               workplace.
             </p>
             <div className="mt-6 inline-flex items-center gap-2 rounded-full border border-green-200 bg-green-50 px-4 py-2 text-xs font-semibold text-green-700">
-              <Shield className="h-4 w-4" /> Privacy First • GDPR & HIPAA aligned
+              <Shield className="h-4 w-4" /> Privacy First • Built on GDPR & HIPAA principles
             </div>
           </div>
-          {[
-            { h: "Product", links: ["Features", "Technology", "Pricing", "Changelog"] },
-            { h: "Company", links: ["About", "Privacy", "Security", "Contact"] },
-          ].map((c) => (
-            <div key={c.h}>
-              <p className="text-sm font-semibold text-slate-950">{c.h}</p>
-              <ul className="mt-4 space-y-3">
-                {c.links.map((l) => {
-                  // Anchors that exist on the page link directly; the rest show
-                  // a friendly "coming soon" toast instead of a dead "#" link.
-                  const anchor =
-                    l === "Features" ? "#features" : l === "Technology" ? "#technology" : null;
-                  if (anchor) {
-                    return (
-                      <li key={l}>
-                        <a href={anchor} className="text-sm text-slate-600 hover:text-slate-900">
-                          {l}
-                        </a>
-                      </li>
-                    );
-                  }
-                  if (l === "Contact") {
-                    return (
-                      <li key={l}>
-                        <a href="mailto:hello@subl.app" className="text-sm text-slate-600 hover:text-slate-900">
-                          {l}
-                        </a>
-                      </li>
-                    );
-                  }
-                  return (
-                    <li key={l}>
-                      <button
-                        type="button"
-                        onClick={() => comingSoon(l)}
-                        className="text-sm text-slate-600 hover:text-slate-900"
-                      >
-                        {l}
-                      </button>
-                    </li>
-                  );
-                })}
-              </ul>
-            </div>
-          ))}
+          <div>
+            <p className="text-sm font-semibold text-slate-950">Company</p>
+            <ul className="mt-4 space-y-3">
+              <li>
+                <Link to="/about" className="text-sm text-slate-600 hover:text-slate-900">
+                  About
+                </Link>
+              </li>
+              <li>
+                <Link to="/privacy" className="text-sm text-slate-600 hover:text-slate-900">
+                  Privacy
+                </Link>
+              </li>
+              <li>
+                <a
+                  href={`mailto:${CONTACT_EMAIL}`}
+                  className="text-sm text-slate-600 hover:text-slate-900"
+                >
+                  Contact
+                </a>
+              </li>
+            </ul>
+          </div>
         </div>
         <div className="mt-12 flex flex-col items-center justify-between gap-4 border-t border-slate-200 pt-8 sm:flex-row">
           <p className="text-xs text-slate-500">© 2026 Subl. All rights reserved.</p>
           <div className="flex items-center gap-4 text-slate-400">
-            <button type="button" onClick={() => comingSoon("Twitter")} aria-label="Subl on Twitter" className="hover:text-slate-700"><Twitter className="h-4 w-4" /></button>
-            <button type="button" onClick={() => comingSoon("LinkedIn")} aria-label="Subl on LinkedIn" className="hover:text-slate-700"><Linkedin className="h-4 w-4" /></button>
-            <button type="button" onClick={() => comingSoon("GitHub")} aria-label="Subl on GitHub" className="hover:text-slate-700"><Github className="h-4 w-4" /></button>
-            <a href="mailto:hello@subl.app" aria-label="Email Subl" className="hover:text-slate-700"><Mail className="h-4 w-4" /></a>
+            <a href={`mailto:${CONTACT_EMAIL}`} aria-label="Email Subl" className="hover:text-slate-700"><Mail className="h-4 w-4" /></a>
           </div>
         </div>
       </div>
