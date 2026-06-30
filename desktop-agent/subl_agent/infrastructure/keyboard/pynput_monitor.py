@@ -52,6 +52,10 @@ class PynputKeyboardMonitor:
         self._first_keydown_ms: Optional[float] = None
         self._total_keystrokes = 0
         self._delete_count = 0
+        self._left_count = 0
+
+    # Left-hand keys on a QWERTY layout — used for the mean_left_freq feature.
+    _LEFT_HAND_KEYS = set("`12345qwertasdfgzxcvb")
 
     @staticmethod
     def _key_id(key) -> str:
@@ -63,6 +67,14 @@ class PynputKeyboardMonitor:
     @staticmethod
     def _is_deletion(key) -> bool:
         return key in (keyboard.Key.backspace, keyboard.Key.delete)
+
+    @classmethod
+    def _is_left_hand(cls, key) -> bool:
+        try:
+            ch = key.char
+        except AttributeError:
+            return False
+        return ch is not None and ch.lower() in cls._LEFT_HAND_KEYS
 
     # ------------------------------------------------------------------
     # Listener callbacks
@@ -88,6 +100,8 @@ class PynputKeyboardMonitor:
                 self._total_keystrokes += 1
                 if is_del:
                     self._delete_count += 1
+                if self._is_left_hand(key):
+                    self._left_count += 1
 
     def _on_release(self, key) -> None:
         now = _now_ms()
@@ -114,11 +128,14 @@ class PynputKeyboardMonitor:
             mean_dwell = statistics.mean(self._dwell_ms) if self._dwell_ms else 0.0
             median_flight = statistics.median(self._flight_ms) if self._flight_ms else 0.0
 
+            mean_flight = statistics.mean(self._flight_ms) if self._flight_ms else 0.0
+            std_dwell = statistics.stdev(self._dwell_ms) if len(self._dwell_ms) >= 2 else 0.0
+            std_flight = statistics.stdev(self._flight_ms) if len(self._flight_ms) >= 2 else 0.0
+            mean_left_freq = (self._left_count / self._total_keystrokes) * 100.0
+
             cv_flight = 0.0
-            if len(self._flight_ms) >= 2:
-                m = statistics.mean(self._flight_ms)
-                if m > 0:
-                    cv_flight = statistics.stdev(self._flight_ms) / m
+            if mean_flight > 0 and len(self._flight_ms) >= 2:
+                cv_flight = std_flight / mean_flight
 
             mean_del_freq = (
                 (self._delete_count / self._total_keystrokes) * 100.0
@@ -137,10 +154,14 @@ class PynputKeyboardMonitor:
 
             features = {
                 "meanDwell": round(mean_dwell, 2),
+                "stdDwell": round(std_dwell, 2),
+                "meanFlight": round(mean_flight, 2),
+                "stdFlight": round(std_flight, 2),
                 "medianFlight": round(median_flight, 2),
                 "cvFlight": round(cv_flight, 4),
                 "meanDelFreq": round(mean_del_freq, 2),
                 "meanTotTime": round(mean_tot_time, 2),
+                "meanLeftFreq": round(mean_left_freq, 2),
                 "nKeys": self._total_keystrokes,
                 "_deleteCount": self._delete_count,
             }
